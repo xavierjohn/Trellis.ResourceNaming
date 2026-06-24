@@ -20,3 +20,6 @@ nupkg/
 # Local template-instantiation scratch used by the contract tests
 _check/
 _smoke/
+
+# DocFX output
+_site/
