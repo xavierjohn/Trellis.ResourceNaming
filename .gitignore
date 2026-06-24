@@ -1,0 +1,22 @@
+# Build output
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+
+# NuGet
+*.nupkg
+nupkg/
+*.snupkg
+
+# IDE
+.vs/
+*.user
+*.suo
+
+# Test
+[Tt]est[Rr]esults/
+
+# Local template-instantiation scratch used by the contract tests
+_check/
+_smoke/
