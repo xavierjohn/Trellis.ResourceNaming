@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <Authors>Xavier John</Authors>
+    <Company>Xavier John</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/xavierjohn/Trellis.Templates</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/xavierjohn/Trellis.Templates.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>trellis;azure;naming;resource-naming;conventions;caf</PackageTags>
+
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix>preview.1</VersionSuffix>
+  </PropertyGroup>
+</Project>
