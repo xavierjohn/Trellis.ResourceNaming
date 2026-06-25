@@ -15,7 +15,7 @@ public class AzureResourceNamerTests
         string? stamp = null,
         string? instance = null,
         CloudScope scope = CloudScope.Isolated,
-        string cloud = "eu") =>
+        string cloud = KnownClouds.AzureCloud) =>
         new()
         {
             System = system,
@@ -147,4 +147,25 @@ public class AzureResourceNamerTests
 
         Assert.Throws<ResourceNameOverflowException>(() => Namer.Name(request));
     }
+
+    [Fact]
+    public void Name_below_minimum_length_throws()
+    {
+        // A synthetic type whose 50-char minimum exceeds any name these short codes can produce.
+        var spec = new ResourceTypeSpec("x", 50, 100, NameSeparator.Dash, IsDnsGlobal: false);
+
+        Assert.Throws<ArgumentException>(() => Namer.Name(Request(spec, "ptk", service: "mbr")));
+    }
+
+    // ---- Input validation ------------------------------------------------------------------------
+
+    [Fact]
+    public void Token_with_non_alphanumeric_characters_throws() =>
+        Assert.Throws<ArgumentException>(() =>
+            Namer.Name(Request(AzureResourceTypes.StorageAccount, "ptk", service: "m-b")));
+
+    [Fact]
+    public void Environment_must_be_a_caf_word() =>
+        Assert.Throws<ArgumentException>(() =>
+            Namer.Name(Request(AzureResourceTypes.StorageAccount, "ptk", env: "ppe")));
 }

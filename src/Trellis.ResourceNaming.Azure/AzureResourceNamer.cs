@@ -11,14 +11,17 @@ namespace Trellis.ResourceNaming.Azure;
 /// Names are workload-first — <c>{system}-{service}-{type}-{env}-{region}-{stamp}-{instance}</c> — with the
 /// universal <c>rg-</c> prefix for resource groups and condensed (separator-free) names for dashless types.
 /// The environment is the full CAF word and falls back to a single character only when a name would exceed
-/// its type's length budget. Globally DNS-scoped types receive a deterministic five-character uniqueness
-/// suffix in <see cref="CloudScope.Shared"/>. A name that still cannot fit throws
-/// <see cref="ResourceNameOverflowException"/> rather than being truncated. The cloud is never a name token;
-/// it selects the endpoint host suffix instead.
+/// its type's length budget. Tokens must be lowercase alphanumeric and the environment one of the CAF words
+/// <c>local</c>/<c>test</c>/<c>stage</c>/<c>prod</c>; other inputs throw. Globally DNS-scoped types receive a
+/// deterministic five-character uniqueness suffix in <see cref="CloudScope.Shared"/>. A name that still cannot
+/// fit throws <see cref="ResourceNameOverflowException"/> rather than being truncated. The cloud is never a
+/// name token; it selects the endpoint host suffix instead.
 /// </remarks>
 public sealed class AzureResourceNamer : IResourceNamer
 {
     private const string HashAlphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
+
+    private static readonly string[] CafEnvironments = ["local", "test", "stage", "prod"];
 
     /// <inheritdoc />
     public string Name(NamingRequest request)
@@ -30,13 +33,13 @@ public sealed class AzureResourceNamer : IResourceNamer
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Cloud);
 
         var spec = request.ResourceType;
-        var system = Normalize(request.System)!;
-        var service = Normalize(request.Service);
-        var region = Normalize(request.Region);
-        var stamp = Normalize(request.Stamp);
-        var instance = Normalize(request.Instance);
+        var system = ValidateToken(Normalize(request.System), nameof(NamingRequest.System))!;
+        var service = ValidateToken(Normalize(request.Service), nameof(NamingRequest.Service));
+        var region = ValidateToken(Normalize(request.Region), nameof(NamingRequest.Region));
+        var stamp = ValidateToken(Normalize(request.Stamp), nameof(NamingRequest.Stamp));
+        var instance = ValidateToken(Normalize(request.Instance), nameof(NamingRequest.Instance));
         var abbr = spec.Abbreviation.ToLowerInvariant();
-        var envFull = Normalize(request.Environment)!;
+        var envFull = ValidateEnvironment(Normalize(request.Environment)!);
 
         // Uniqueness suffix for globally DNS-scoped names in commercial Azure. Seeded on the canonical
         // identity (always the full env) so it is stable even if the env token later falls back.
@@ -57,6 +60,14 @@ public sealed class AzureResourceNamer : IResourceNamer
                 $"Resource name '{name}' ({name.Length} chars) exceeds the {spec.MaxLength}-char limit for " +
                 $"type '{abbr}'. Shorten the system/service codes — the convention fails rather than " +
                 "truncating a disambiguating token into a collision.");
+        }
+
+        if (name.Length < spec.MinLength)
+        {
+            throw new ArgumentException(
+                $"Resource name '{name}' ({name.Length} chars) is below the {spec.MinLength}-char minimum for " +
+                $"type '{abbr}'. Use longer system/service codes.",
+                nameof(request));
         }
 
         return name;
@@ -111,8 +122,39 @@ public sealed class AzureResourceNamer : IResourceNamer
         "test" => "t",
         "stage" => "s",
         "prod" => "p",
-        _ => env.Length > 0 ? env[..1] : env,
+        _ => throw new InvalidOperationException($"Unsupported environment '{env}'."),
     };
+
+    private static string? ValidateToken(string? token, string field)
+    {
+        if (token is null) return null;
+
+        foreach (var c in token)
+        {
+            if (c is (< 'a' or > 'z') and (< '0' or > '9'))
+            {
+                throw new ArgumentException(
+                    $"The {field} token '{token}' must be lowercase alphanumeric ([a-z0-9]); the convention " +
+                    "inserts any separators.",
+                    field);
+            }
+        }
+
+        return token;
+    }
+
+    private static string ValidateEnvironment(string env)
+    {
+        if (Array.IndexOf(CafEnvironments, env) < 0)
+        {
+            throw new ArgumentException(
+                $"Environment '{env}' is not a CAF environment word; use one of: " +
+                $"{string.Join(", ", CafEnvironments)}.",
+                nameof(NamingRequest.Environment));
+        }
+
+        return env;
+    }
 
     private static string Seed(
         string system, string? service, string abbr, string env, string? region, string? stamp,

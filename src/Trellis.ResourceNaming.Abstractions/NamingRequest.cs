@@ -24,7 +24,10 @@ public sealed record NamingRequest
     /// <summary>Disambiguator for multiple same-type resources sharing a scope in one slice (e.g. <c>001</c>).</summary>
     public string? Instance { get; init; }
 
-    /// <summary>Cloud code used for endpoint resolution and the Shared-scope uniqueness suffix; never part of the name.</summary>
+    /// <summary>
+    /// Cloud identifier. The Azure implementation expects a <c>KnownClouds</c> value (e.g. <c>AzureCloud</c>)
+    /// so it can resolve endpoints; it also seeds the Shared-scope uniqueness suffix. Never part of the name.
+    /// </summary>
     public required string Cloud { get; init; }
 
     /// <summary>Isolation scope. Defaults to <see cref="CloudScope.Isolated"/>.</summary>
