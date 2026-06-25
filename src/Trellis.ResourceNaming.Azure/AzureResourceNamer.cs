@@ -12,18 +12,15 @@ namespace Trellis.ResourceNaming.Azure;
 /// The environment is the full CAF word and falls back to a single character only when a name would exceed
 /// its type's length budget. Globally DNS-scoped types receive a deterministic five-character uniqueness
 /// suffix in <see cref="CloudScope.Shared"/>. A name that still cannot fit throws
-/// <see cref="ResourceNameOverflowException"/> rather than being truncated. The cloud and a resource's role
-/// are emitted as tags, never as name tokens.
+/// <see cref="ResourceNameOverflowException"/> rather than being truncated. The cloud is never a name token;
+/// it selects the endpoint host suffix instead.
 /// </remarks>
 public sealed class AzureResourceNamer : IResourceNamer
 {
-    /// <summary>The policy version stamped onto every result as the <c>namingPolicyVersion</c> tag.</summary>
-    public const string PolicyVersion = NamingPolicy.Version;
-
     private const string HashAlphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
 
     /// <inheritdoc />
-    public NamingResult Name(NamingRequest request)
+    public string Name(NamingRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(request.ResourceType);
@@ -61,7 +58,7 @@ public sealed class AzureResourceNamer : IResourceNamer
                 "truncating a disambiguating token into a collision.");
         }
 
-        return new NamingResult(name, BuildTags(request, envFull));
+        return name;
     }
 
     private static string Assemble(
@@ -102,33 +99,6 @@ public sealed class AzureResourceNamer : IResourceNamer
         if (hash is not null) tokens.Add(hash);
 
         return spec.Separator == NameSeparator.Dash ? string.Join('-', tokens) : string.Concat(tokens);
-    }
-
-    private static IReadOnlyDictionary<string, string> BuildTags(NamingRequest r, string envFull)
-    {
-        var tags = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["system"] = r.System,
-            ["env"] = envFull,
-            ["cloud"] = r.Cloud,
-            ["namingPolicyVersion"] = PolicyVersion,
-        };
-
-        if (!string.IsNullOrWhiteSpace(r.Service)) tags["service"] = r.Service;
-        if (!string.IsNullOrWhiteSpace(r.Region)) tags["region"] = r.Region;
-        if (!string.IsNullOrWhiteSpace(r.Stamp)) tags["stamp"] = r.Stamp;
-        if (!string.IsNullOrWhiteSpace(r.Instance)) tags["instance"] = r.Instance;
-        if (!string.IsNullOrWhiteSpace(r.Role)) tags["purpose"] = r.Role;
-
-        if (r.AdditionalTags is not null)
-        {
-            foreach (var tag in r.AdditionalTags)
-            {
-                tags[tag.Key] = tag.Value;
-            }
-        }
-
-        return tags;
     }
 
     private static string? Normalize(string? token) =>

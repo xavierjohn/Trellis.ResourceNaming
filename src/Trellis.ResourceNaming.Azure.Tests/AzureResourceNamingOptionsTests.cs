@@ -20,7 +20,7 @@ public class AzureResourceNamingOptionsTests
     [Fact]
     public void Blob_url_regional_checkpoint() =>
         Assert.Equal("https://ptkmbrstprodweu.blob.core.windows.net/",
-            Ctx.BlobUrl(role: "ehcheckpoint", region: Ctx.Region).AbsoluteUri);
+            Ctx.BlobUrl(region: Ctx.Region).AbsoluteUri);
 
     [Fact]
     public void KeyVault_uri_is_regional() =>
@@ -72,14 +72,5 @@ public class AzureResourceNamingOptionsTests
         };
 
         Assert.Equal("https://ptkmbrstprod.blob.core.usgovcloudapi.net/", usGov.BlobUrl().AbsoluteUri);
-    }
-
-    [Fact]
-    public void Describe_exposes_tags()
-    {
-        var result = Ctx.Describe(AzureResourceTypes.StorageAccount, role: "blob");
-
-        Assert.Equal("blob", result.Tags["purpose"]);
-        Assert.Equal("ptk", result.Tags["system"]);
     }
 }

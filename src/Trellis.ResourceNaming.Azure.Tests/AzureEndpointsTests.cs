@@ -84,8 +84,7 @@ public class AzureEndpointsTests
             Environment = "prod",
             Region = "weu",
             Cloud = "us",
-            Role = "ehcheckpoint",
-        }).Name;
+        });
 
         var url = AzureEndpoints.Blob(name, AzureClouds.Public).AbsoluteUri;
 

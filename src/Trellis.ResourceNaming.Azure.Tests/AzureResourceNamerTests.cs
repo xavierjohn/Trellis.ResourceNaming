@@ -15,8 +15,7 @@ public class AzureResourceNamerTests
         string? stamp = null,
         string? instance = null,
         CloudScope scope = CloudScope.Isolated,
-        string cloud = "eu",
-        string? role = null) =>
+        string cloud = "eu") =>
         new()
         {
             System = system,
@@ -28,7 +27,6 @@ public class AzureResourceNamerTests
             Instance = instance,
             Scope = scope,
             Cloud = cloud,
-            Role = role,
         };
 
     private static string NameOf(
@@ -40,7 +38,7 @@ public class AzureResourceNamerTests
         string? stamp = null,
         string? instance = null,
         CloudScope scope = CloudScope.Isolated) =>
-        Namer.Name(Request(type, system, service, env, region, stamp, instance, scope)).Name;
+        Namer.Name(Request(type, system, service, env, region, stamp, instance, scope));
 
     // ---- Cloud-singleton (no region token) -------------------------------------------------------
 
@@ -148,24 +146,5 @@ public class AzureResourceNamerTests
             region: "weu", stamp: "001", instance: "001");
 
         Assert.Throws<ResourceNameOverflowException>(() => Namer.Name(request));
-    }
-
-    // ---- Tags carry the full taxonomy ------------------------------------------------------------
-
-    [Fact]
-    public void Tags_capture_role_and_dimensions()
-    {
-        var result = Namer.Name(Request(AzureResourceTypes.StorageAccount, "ptk", "mbr",
-            region: "weu", instance: "001", cloud: "eu", role: "blob"));
-
-        Assert.Equal("ptk", result.Tags["system"]);
-        Assert.Equal("mbr", result.Tags["service"]);
-        Assert.Equal("prod", result.Tags["env"]);
-        Assert.Equal("weu", result.Tags["region"]);
-        Assert.Equal("001", result.Tags["instance"]);
-        Assert.Equal("blob", result.Tags["purpose"]);
-        Assert.Equal("eu", result.Tags["cloud"]);
-        Assert.Equal(AzureResourceNamer.PolicyVersion, result.Tags["namingPolicyVersion"]);
-        Assert.False(result.Tags.ContainsKey("purpose") && result.Name.Contains("blob"));
     }
 }

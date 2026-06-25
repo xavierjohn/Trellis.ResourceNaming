@@ -19,7 +19,7 @@ public sealed class AzureResourceNamingOptions
     /// <summary>Physical region code for regional resources (e.g. <c>weu</c>).</summary>
     public string? Region { get; set; }
 
-    /// <summary>Azure cloud environment — a <see cref="KnownClouds"/> value (drives both tags and endpoints).</summary>
+    /// <summary>Azure cloud environment — a <see cref="KnownClouds"/> value that selects the endpoint host suffix.</summary>
     public string Cloud { get; set; } = KnownClouds.AzureCloud;
 
     /// <summary>Isolation scope. Defaults to <see cref="CloudScope.Isolated"/>.</summary>

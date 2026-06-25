@@ -12,20 +12,20 @@ public static class AzureResourceNamingOptionsExtensions
     // ---- Storage -------------------------------------------------------------------------------
 
     /// <summary>The storage account name. Omit <paramref name="region"/> for the cloud-singleton (shared) account.</summary>
-    public static string StorageName(this AzureResourceNamingOptions context, string? role = null, string? region = null) =>
-        context.Name(AzureResourceTypes.StorageAccount, role, region);
+    public static string StorageName(this AzureResourceNamingOptions context, string? region = null, string? instance = null) =>
+        context.Name(AzureResourceTypes.StorageAccount, region, instance);
 
     /// <summary>The Blob endpoint for a storage account.</summary>
-    public static Uri BlobUrl(this AzureResourceNamingOptions context, string? role = null, string? region = null) =>
-        AzureEndpoints.Blob(context.StorageName(role, region), Endpoints(context));
+    public static Uri BlobUrl(this AzureResourceNamingOptions context, string? region = null, string? instance = null) =>
+        AzureEndpoints.Blob(context.StorageName(region, instance), Endpoints(context));
 
     /// <summary>The Queue endpoint for a storage account.</summary>
-    public static Uri QueueUrl(this AzureResourceNamingOptions context, string? role = null, string? region = null) =>
-        AzureEndpoints.Queue(context.StorageName(role, region), Endpoints(context));
+    public static Uri QueueUrl(this AzureResourceNamingOptions context, string? region = null, string? instance = null) =>
+        AzureEndpoints.Queue(context.StorageName(region, instance), Endpoints(context));
 
     /// <summary>The Table endpoint for a storage account.</summary>
-    public static Uri TableUrl(this AzureResourceNamingOptions context, string? role = null, string? region = null) =>
-        AzureEndpoints.Table(context.StorageName(role, region), Endpoints(context));
+    public static Uri TableUrl(this AzureResourceNamingOptions context, string? region = null, string? instance = null) =>
+        AzureEndpoints.Table(context.StorageName(region, instance), Endpoints(context));
 
     // ---- Key Vault (regional) ------------------------------------------------------------------
 
@@ -120,26 +120,16 @@ public static class AzureResourceNamingOptionsExtensions
 
     // ---- Escape hatch for any other type -------------------------------------------------------
 
-    /// <summary>Computes a name for any resource type, with optional role/region/instance overrides.</summary>
+    /// <summary>Computes a name for any resource type, with optional region/instance overrides.</summary>
     public static string Name(
         this AzureResourceNamingOptions context,
         ResourceTypeSpec type,
-        string? role = null,
         string? region = null,
         string? instance = null) =>
-        Namer.Name(Build(context, type, role, region, instance)).Name;
-
-    /// <summary>Computes the name and governance tags for any resource type.</summary>
-    public static NamingResult Describe(
-        this AzureResourceNamingOptions context,
-        ResourceTypeSpec type,
-        string? role = null,
-        string? region = null,
-        string? instance = null) =>
-        Namer.Name(Build(context, type, role, region, instance));
+        Namer.Name(Build(context, type, region, instance));
 
     private static NamingRequest Build(
-        AzureResourceNamingOptions context, ResourceTypeSpec type, string? role, string? region, string? instance)
+        AzureResourceNamingOptions context, ResourceTypeSpec type, string? region, string? instance)
     {
         ArgumentNullException.ThrowIfNull(context);
         return new NamingRequest
@@ -153,7 +143,6 @@ public static class AzureResourceNamingOptionsExtensions
             Instance = instance,
             Cloud = context.Cloud,
             Scope = context.Scope,
-            Role = role,
         };
     }
 
