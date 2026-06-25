@@ -5,7 +5,6 @@ public static class AzureClouds
 {
     /// <summary>Azure public (commercial) cloud endpoints.</summary>
     public static readonly CloudEndpoints Public = new(
-        LocationMoniker: "public",
         StorageSuffix: "core.windows.net",
         KeyVaultSuffix: "vault.azure.net",
         ServiceBusSuffix: "servicebus.windows.net",
@@ -14,7 +13,6 @@ public static class AzureClouds
 
     /// <summary>Azure US Government cloud endpoints.</summary>
     public static readonly CloudEndpoints UsGovernment = new(
-        LocationMoniker: "usgov",
         StorageSuffix: "core.usgovcloudapi.net",
         KeyVaultSuffix: "vault.usgovcloudapi.net",
         ServiceBusSuffix: "servicebus.usgovcloudapi.net",
@@ -23,7 +21,6 @@ public static class AzureClouds
 
     /// <summary>Azure China (21Vianet) cloud endpoints.</summary>
     public static readonly CloudEndpoints China = new(
-        LocationMoniker: "china",
         StorageSuffix: "core.chinacloudapi.cn",
         KeyVaultSuffix: "vault.azure.cn",
         ServiceBusSuffix: "servicebus.chinacloudapi.cn",
@@ -32,7 +29,6 @@ public static class AzureClouds
 
     /// <summary>Azure Germany cloud endpoints (retired by Azure; retained for completeness).</summary>
     public static readonly CloudEndpoints Germany = new(
-        LocationMoniker: "germany",
         StorageSuffix: "core.cloudapi.de",
         KeyVaultSuffix: "vault.microsoftazure.de",
         ServiceBusSuffix: "servicebus.cloudapi.de",

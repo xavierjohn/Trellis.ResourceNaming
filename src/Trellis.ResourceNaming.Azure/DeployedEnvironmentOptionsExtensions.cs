@@ -119,18 +119,6 @@ public static class DeployedEnvironmentOptionsExtensions
     public static string ResourceGroupName(this DeployedEnvironmentOptions context) =>
         context.Name(AzureResourceTypes.ResourceGroup, region: context.RegionShortName);
 
-    // ---- SLI location ---------------------------------------------------------------------------
-
-    /// <summary>
-    /// The cloud's short location moniker (e.g. <c>public</c>) for the cloud segment of an SLI location id:
-    /// <c>ServiceLevelIndicator.CreateLocationId(env.CloudMoniker(), env.Region)</c>.
-    /// </summary>
-    public static string CloudMoniker(this DeployedEnvironmentOptions context)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-        return AzureClouds.ByName(context.Cloud).LocationMoniker;
-    }
-
     // ---- Escape hatch for any other type -------------------------------------------------------
 
     /// <summary>Computes a name for any resource type, with optional region/instance overrides.</summary>

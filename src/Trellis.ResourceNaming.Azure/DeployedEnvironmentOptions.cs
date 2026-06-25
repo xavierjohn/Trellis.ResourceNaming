@@ -1,10 +1,9 @@
 namespace Trellis.ResourceNaming.Azure;
 
 /// <summary>
-/// The deployed-environment context for a service — bound once from configuration — that every consumer reads.
-/// The resource-naming accessors infer resource names and endpoint URLs from it (the analog of the ASP
-/// template's <c>EnvironmentOptions</c>), and an SLI caller builds its location id from the cloud moniker and
-/// <see cref="Region"/>. Set these few values once; ask for names, URLs, or the location parts by accessor.
+/// The deployed-environment context for a service — bound once from configuration — that consumers read to
+/// derive resource names and endpoint URLs (the analog of the ASP template's <c>EnvironmentOptions</c>). Set
+/// these few values once; ask for names or URLs by accessor.
 /// </summary>
 public sealed class DeployedEnvironmentOptions
 {
@@ -18,8 +17,8 @@ public sealed class DeployedEnvironmentOptions
     public string Environment { get; set; } = string.Empty;
 
     /// <summary>
-    /// Full Azure region name (e.g. <c>westus3</c>), used for the SLI location id and display. It is never a
-    /// name token — resource names use <see cref="RegionShortName"/>.
+    /// Full Azure region name (e.g. <c>westus3</c>), for display and telemetry. It is never a name token —
+    /// resource names use <see cref="RegionShortName"/>.
     /// </summary>
     public string? Region { get; set; }
 

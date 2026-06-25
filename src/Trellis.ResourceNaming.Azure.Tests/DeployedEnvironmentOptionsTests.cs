@@ -74,16 +74,4 @@ public class DeployedEnvironmentOptionsTests
 
         Assert.Equal("https://ptkmbrstprod.blob.core.usgovcloudapi.net/", usGov.BlobUrl().AbsoluteUri);
     }
-
-    [Fact]
-    public void Cloud_moniker_for_public_cloud() =>
-        Assert.Equal("public", Ctx.CloudMoniker());
-
-    [Fact]
-    public void Cloud_moniker_for_us_government()
-    {
-        var usGov = new DeployedEnvironmentOptions { System = "ptk", Cloud = KnownClouds.AzureUSGovernment };
-
-        Assert.Equal("usgov", usGov.CloudMoniker());
-    }
 }
