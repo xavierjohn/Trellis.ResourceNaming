@@ -2,9 +2,9 @@ using Xunit;
 
 namespace Trellis.ResourceNaming.Azure.Tests;
 
-public class AzureResourceContextTests
+public class AzureResourceNamingOptionsTests
 {
-    private static readonly AzureResourceContext Ctx = new()
+    private static readonly AzureResourceNamingOptions Ctx = new()
     {
         System = "ptk",
         Service = "mbr",
@@ -53,7 +53,7 @@ public class AzureResourceContextTests
     [Fact]
     public void Cloud_drives_the_endpoint_suffix()
     {
-        var usGov = new AzureResourceContext
+        var usGov = new AzureResourceNamingOptions
         {
             System = "ptk", Service = "mbr", Environment = "prod", Region = "weu",
             Cloud = KnownClouds.AzureUSGovernment,

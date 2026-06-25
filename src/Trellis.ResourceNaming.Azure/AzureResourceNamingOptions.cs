@@ -5,7 +5,7 @@ namespace Trellis.ResourceNaming.Azure;
 /// endpoint is derived. The analog of the ASP template's <c>EnvironmentOptions</c>: set these few values and
 /// ask for names/URLs by resource, without repeating the context or naming the resource type at each call.
 /// </summary>
-public sealed class AzureResourceContext
+public sealed class AzureResourceNamingOptions
 {
     /// <summary>Product / platform short code (e.g. <c>ptk</c>).</summary>
     public string System { get; set; } = string.Empty;
