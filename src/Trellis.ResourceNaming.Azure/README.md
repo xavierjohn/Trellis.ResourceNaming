@@ -23,7 +23,7 @@ var env = new DeployedEnvironmentOptions
     System = "ptk",
     Service = "mbr",
     Environment = "prod",
-    Region = "westus3",            // full region name — for display / location
+    Region = "westeurope",         // full region name — for display / location
     RegionShortName = "weu",       // short code — the region token used in regional names
     Cloud = KnownClouds.AzureCloud,
 };
@@ -46,7 +46,7 @@ DNS suffix automatically — the resource *name* is unchanged.
   "System": "ptk",
   "Service": "mbr",
   "Environment": "prod",
-  "Region": "westus3",
+  "Region": "westeurope",
   "RegionShortName": "weu",
   "Cloud": "AzureCloud"
 }
@@ -88,5 +88,5 @@ Most callers only need `DeployedEnvironmentOptions`. Underneath:
 - **`AzureEndpoints`** — builds a connect endpoint from a bare name + a `CloudEndpoints`
   (e.g. `AzureEndpoints.Blob(name, AzureClouds.UsGovernment)`). Secondary to the accessors above; useful for
   a name you already have, or a cloud outside the four built-ins.
-- **`AzureClouds` / `KnownClouds`** — the built-in cloud catalog (Public, US Gov, China, Germany) and their
+- **`AzureClouds` / `KnownClouds`** — the built-in cloud catalog (Public, US Gov, China) and their
   identifiers.

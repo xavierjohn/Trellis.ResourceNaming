@@ -9,7 +9,7 @@ public class DeployedEnvironmentOptionsTests
         System = "ptk",
         Service = "mbr",
         Environment = "prod",
-        Region = "westus3",
+        Region = "westeurope",
         RegionShortName = "weu",
         Cloud = KnownClouds.AzureCloud,
     };

@@ -27,14 +27,6 @@ public static class AzureClouds
         CosmosSuffix: "documents.azure.cn",
         SqlSuffix: "database.chinacloudapi.cn");
 
-    /// <summary>Azure Germany cloud endpoints (retired by Azure; retained for completeness).</summary>
-    public static readonly CloudEndpoints Germany = new(
-        StorageSuffix: "core.cloudapi.de",
-        KeyVaultSuffix: "vault.microsoftazure.de",
-        ServiceBusSuffix: "servicebus.cloudapi.de",
-        CosmosSuffix: "documents.microsoftazure.de",
-        SqlSuffix: "database.cloudapi.de");
-
     /// <summary>Resolves the endpoints for a <see cref="KnownClouds"/> identifier.</summary>
     /// <param name="cloud">A <see cref="KnownClouds"/> value.</param>
     /// <returns>The matching <see cref="CloudEndpoints"/>.</returns>
@@ -44,7 +36,6 @@ public static class AzureClouds
         KnownClouds.AzureCloud => Public,
         KnownClouds.AzureUSGovernment => UsGovernment,
         KnownClouds.AzureChinaCloud => China,
-        KnownClouds.AzureGermanCloud => Germany,
         _ => throw new NotSupportedException(
             $"Cloud '{cloud}' is not a known Azure cloud. Pass a CloudEndpoints directly for sovereign clouds."),
     };

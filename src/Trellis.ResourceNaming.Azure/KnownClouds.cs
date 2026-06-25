@@ -14,7 +14,4 @@ public static class KnownClouds
 
     /// <summary>Azure China (21Vianet) cloud.</summary>
     public const string AzureChinaCloud = nameof(AzureChinaCloud);
-
-    /// <summary>Azure Germany cloud (retired by Azure).</summary>
-    public const string AzureGermanCloud = nameof(AzureGermanCloud);
 }
