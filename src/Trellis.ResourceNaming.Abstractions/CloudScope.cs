@@ -1,8 +1,8 @@
 namespace Trellis.ResourceNaming;
 
 /// <summary>
-/// Whether a resource lives in a fully isolated cloud (its own DNS namespaces) or in commercial Azure
-/// where globally-scoped names must be disambiguated.
+/// Whether a resource lives in a fully isolated cloud (its own DNS namespaces) or in a shared, multi-tenant
+/// DNS namespace where globally-scoped names must be disambiguated.
 /// </summary>
 public enum CloudScope
 {
@@ -12,6 +12,6 @@ public enum CloudScope
     /// </summary>
     Isolated,
 
-    /// <summary>Commercial Azure. Globally DNS-scoped names receive a short uniqueness suffix.</summary>
+    /// <summary>A shared, multi-tenant DNS namespace. Globally DNS-scoped names receive a short uniqueness suffix.</summary>
     Shared,
 }

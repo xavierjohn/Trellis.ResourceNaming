@@ -1,8 +1,8 @@
 namespace Trellis.ResourceNaming.Azure;
 
 /// <summary>
-/// String identifiers for the well-known Azure cloud environments. The values match the ASP template's
-/// <c>CloudType</c> constants so the two stay interchangeable.
+/// String identifiers for the well-known Azure cloud environments, matching the conventional Azure ARM
+/// environment names (e.g. <c>AzureCloud</c>, <c>AzureUSGovernment</c>).
 /// </summary>
 public static class KnownClouds
 {
