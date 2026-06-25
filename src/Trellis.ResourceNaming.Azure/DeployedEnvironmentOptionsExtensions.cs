@@ -156,13 +156,14 @@ public static class DeployedEnvironmentOptionsExtensions
     private static string RequireRegionShortName(DeployedEnvironmentOptions context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        if (string.IsNullOrWhiteSpace(context.RegionShortName))
+        var region = context.RegionShortName;
+        if (string.IsNullOrWhiteSpace(region))
         {
             throw new InvalidOperationException(
                 "A regional resource name requires RegionShortName to be set on the deployed environment.");
         }
 
-        return context.RegionShortName;
+        return region;
     }
 
     private static CloudEndpoints Endpoints(DeployedEnvironmentOptions context)
