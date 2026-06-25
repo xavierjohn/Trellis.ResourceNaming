@@ -54,6 +54,25 @@ public static class AzureEndpoints
         return new Uri($"https://{accountName}.{cloud.CosmosSuffix}/");
     }
 
+    /// <summary>
+    /// The fully-qualified name for a SQL logical server, e.g. <c>{name}.database.windows.net</c> — the host
+    /// used in the connection string's <c>Server=tcp:…,1433</c>.
+    /// </summary>
+    public static string SqlServer(string serverName, CloudEndpoints cloud)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(serverName);
+        ArgumentNullException.ThrowIfNull(cloud);
+        return $"{serverName}.{cloud.SqlSuffix}";
+    }
+
+    /// <summary>
+    /// The fully-qualified namespace for an Event Hubs namespace, e.g. <c>{name}.servicebus.windows.net</c>.
+    /// Event Hubs shares the Service Bus domain, so this resolves to the same suffix as
+    /// <see cref="ServiceBusNamespace"/>.
+    /// </summary>
+    public static string EventHubsNamespace(string namespaceName, CloudEndpoints cloud) =>
+        ServiceBusNamespace(namespaceName, cloud);
+
     private static Uri StorageService(string account, string service, CloudEndpoints cloud)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(account);

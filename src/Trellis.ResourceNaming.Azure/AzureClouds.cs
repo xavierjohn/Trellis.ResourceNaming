@@ -8,28 +8,32 @@ public static class AzureClouds
         StorageSuffix: "core.windows.net",
         KeyVaultSuffix: "vault.azure.net",
         ServiceBusSuffix: "servicebus.windows.net",
-        CosmosSuffix: "documents.azure.com");
+        CosmosSuffix: "documents.azure.com",
+        SqlSuffix: "database.windows.net");
 
     /// <summary>Azure US Government cloud endpoints.</summary>
     public static readonly CloudEndpoints UsGovernment = new(
         StorageSuffix: "core.usgovcloudapi.net",
         KeyVaultSuffix: "vault.usgovcloudapi.net",
         ServiceBusSuffix: "servicebus.usgovcloudapi.net",
-        CosmosSuffix: "documents.azure.us");
+        CosmosSuffix: "documents.azure.us",
+        SqlSuffix: "database.usgovcloudapi.net");
 
     /// <summary>Azure China (21Vianet) cloud endpoints.</summary>
     public static readonly CloudEndpoints China = new(
         StorageSuffix: "core.chinacloudapi.cn",
         KeyVaultSuffix: "vault.azure.cn",
         ServiceBusSuffix: "servicebus.chinacloudapi.cn",
-        CosmosSuffix: "documents.azure.cn");
+        CosmosSuffix: "documents.azure.cn",
+        SqlSuffix: "database.chinacloudapi.cn");
 
     /// <summary>Azure Germany cloud endpoints (retired by Azure; retained for completeness).</summary>
     public static readonly CloudEndpoints Germany = new(
         StorageSuffix: "core.cloudapi.de",
         KeyVaultSuffix: "vault.microsoftazure.de",
         ServiceBusSuffix: "servicebus.cloudapi.de",
-        CosmosSuffix: "documents.microsoftazure.de");
+        CosmosSuffix: "documents.microsoftazure.de",
+        SqlSuffix: "database.cloudapi.de");
 
     /// <summary>Resolves the endpoints for a <see cref="KnownClouds"/> identifier.</summary>
     /// <param name="cloud">A <see cref="KnownClouds"/> value.</param>

@@ -45,6 +45,21 @@ public class AzureEndpointsTests
             AzureEndpoints.Cosmos("ptk-cosmos-prod", AzureClouds.Public).AbsoluteUri);
 
     [Fact]
+    public void Sql_server_fqdn_public_cloud() =>
+        Assert.Equal("ptk-sql-prod.database.windows.net",
+            AzureEndpoints.SqlServer("ptk-sql-prod", AzureClouds.Public));
+
+    [Fact]
+    public void Sql_server_fqdn_us_government() =>
+        Assert.Equal("ptk-sql-prod.database.usgovcloudapi.net",
+            AzureEndpoints.SqlServer("ptk-sql-prod", AzureClouds.UsGovernment));
+
+    [Fact]
+    public void EventHubs_namespace_shares_service_bus_suffix() =>
+        Assert.Equal("ptk-mbr-evhns-prod.servicebus.windows.net",
+            AzureEndpoints.EventHubsNamespace("ptk-mbr-evhns-prod", AzureClouds.Public));
+
+    [Fact]
     public void ByName_resolves_known_clouds() =>
         Assert.Same(AzureClouds.UsGovernment, AzureClouds.ByName(KnownClouds.AzureUSGovernment));
 

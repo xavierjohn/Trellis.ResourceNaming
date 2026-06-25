@@ -11,8 +11,10 @@ namespace Trellis.ResourceNaming.Azure;
 /// <param name="KeyVaultSuffix">Key Vault suffix, e.g. <c>vault.azure.net</c>.</param>
 /// <param name="ServiceBusSuffix">Service Bus / Event Hubs suffix, e.g. <c>servicebus.windows.net</c>.</param>
 /// <param name="CosmosSuffix">Cosmos DB suffix, e.g. <c>documents.azure.com</c>.</param>
+/// <param name="SqlSuffix">SQL logical-server suffix, e.g. <c>database.windows.net</c>.</param>
 public sealed record CloudEndpoints(
     string StorageSuffix,
     string KeyVaultSuffix,
     string ServiceBusSuffix,
-    string CosmosSuffix);
+    string CosmosSuffix,
+    string SqlSuffix);
