@@ -84,6 +84,9 @@ public class DeployedEnvironmentOptionsTests
         };
 
         Assert.Throws<InvalidOperationException>(() => noRegion.KeyVaultName());
+        Assert.Throws<InvalidOperationException>(() => noRegion.ManagedIdentityName());
+        Assert.Throws<InvalidOperationException>(() => noRegion.AppServiceName());
+        Assert.Throws<InvalidOperationException>(() => noRegion.LogAnalyticsName());
         Assert.Throws<InvalidOperationException>(() => noRegion.ResourceGroupName());
     }
 }
