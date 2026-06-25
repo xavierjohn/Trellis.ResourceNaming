@@ -1,0 +1,68 @@
+# Manual publish of the resource-naming libraries to nuget.org via NuGet Trusted Publishing (OIDC).
+#
+# Defaults to a dry run (pack only). Set dry_run = false to publish. Requires a Trusted Publishing policy on
+# nuget.org for repository owner xavierjohn, repository Trellis.Templates, workflow file
+# publish-libraries.yml (environment empty), plus the NUGET_USER secret. Packs Trellis.ResourceNaming.Abstractions
+# and Trellis.ResourceNaming.Azure (the test project is not packable).
+name: Publish libraries
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (pack only, do not push)'
+        required: false
+        default: 'true'
+        type: choice
+        options: [ 'true', 'false' ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: publish libraries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build + test (gate)
+        run: |
+          dotnet build src/Trellis.ResourceNaming.slnx -c Release
+          dotnet test src/Trellis.ResourceNaming.slnx --no-build -c Release
+
+      - name: Pack
+        run: dotnet pack src/Trellis.ResourceNaming.slnx -c Release -o nupkg
+
+      - name: List packages
+        run: ls -lh nupkg/*.nupkg
+
+      - name: NuGet login (OIDC trusted publishing)
+        id: login
+        if: ${{ inputs.dry_run == 'false' }}
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Publish to NuGet
+        if: ${{ inputs.dry_run == 'false' }}
+        run: >
+          dotnet nuget push "nupkg/*.nupkg"
+          --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
+
+      - name: Dry-run summary
+        if: ${{ inputs.dry_run == 'true' }}
+        run: |
+          echo "DRY RUN — packages built but NOT published. Set dry_run = false to publish:"
+          ls -lh nupkg/*.nupkg

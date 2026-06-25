@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Trellis.ResourceNaming.Abstractions/Trellis.ResourceNaming.Abstractions.csproj" />
+  <Project Path="Trellis.ResourceNaming.Azure/Trellis.ResourceNaming.Azure.csproj" />
+  <Project Path="Trellis.ResourceNaming.Azure.Tests/Trellis.ResourceNaming.Azure.Tests.csproj" />
+</Solution>

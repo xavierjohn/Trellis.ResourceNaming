@@ -1,0 +1,36 @@
+# Builds and tests the resource-naming libraries (src/) on every change that touches them.
+name: Libraries
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths: [ 'src/**', '.github/workflows/libraries.yml' ]
+  pull_request:
+    branches: [ main ]
+    paths: [ 'src/**', '.github/workflows/libraries.yml' ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: build + test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore src/Trellis.ResourceNaming.slnx
+
+      - name: Build
+        run: dotnet build src/Trellis.ResourceNaming.slnx --no-restore -c Release
+
+      - name: Test
+        run: dotnet test src/Trellis.ResourceNaming.slnx --no-build -c Release
