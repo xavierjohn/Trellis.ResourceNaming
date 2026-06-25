@@ -37,25 +37,44 @@ public static class AzureResourceNamingOptionsExtensions
     public static Uri KeyVaultUri(this AzureResourceNamingOptions context) =>
         AzureEndpoints.KeyVault(context.KeyVaultName(), Endpoints(context));
 
-    // ---- Service Bus (cloud-singleton connect alias) -------------------------------------------
+    // ---- Service Bus / Event Hubs — connect alias (cloud-singleton, no region) ------------------
+    //
+    // A service ALWAYS connects to the stable alias (no region); whether it resolves to a single
+    // namespace or a geo-DR pair is an infra detail behind the alias. Provisioning creates the regional
+    // PHYSICAL namespaces (primary + secondary) via the *PhysicalNamespaceName methods below — never a
+    // physical namespace named as the alias.
 
-    /// <summary>The Service Bus namespace name.</summary>
+    /// <summary>The Service Bus connect-alias name (cloud-singleton, no region).</summary>
     public static string ServiceBusName(this AzureResourceNamingOptions context) =>
         context.Name(AzureResourceTypes.ServiceBusNamespace);
 
-    /// <summary>The Service Bus fully-qualified namespace (what <c>ServiceBusClient</c> takes).</summary>
+    /// <summary>The Service Bus connect-alias fully-qualified namespace (what <c>ServiceBusClient</c> takes).</summary>
     public static string ServiceBusNamespace(this AzureResourceNamingOptions context) =>
         AzureEndpoints.ServiceBusNamespace(context.ServiceBusName(), Endpoints(context));
 
-    // ---- Event Hubs (regional) -----------------------------------------------------------------
-
-    /// <summary>The Event Hubs namespace name (regional).</summary>
+    /// <summary>The Event Hubs connect-alias name (cloud-singleton, no region).</summary>
     public static string EventHubsName(this AzureResourceNamingOptions context) =>
-        context.Name(AzureResourceTypes.EventHubsNamespace, region: context.Region);
+        context.Name(AzureResourceTypes.EventHubsNamespace);
 
-    /// <summary>The Event Hubs fully-qualified namespace.</summary>
+    /// <summary>The Event Hubs connect-alias fully-qualified namespace (what the Event Hubs clients take).</summary>
     public static string EventHubsNamespace(this AzureResourceNamingOptions context) =>
         AzureEndpoints.EventHubsNamespace(context.EventHubsName(), Endpoints(context));
+
+    /// <summary>
+    /// The regional PHYSICAL Service Bus namespace name (a primary or secondary of a geo-DR pair). For
+    /// provisioning/failover only — services connect through <see cref="ServiceBusNamespace"/>. A region is
+    /// required: a physical namespace is never region-less (that name is reserved for the alias).
+    /// </summary>
+    public static string ServiceBusPhysicalNamespaceName(this AzureResourceNamingOptions context, string region) =>
+        context.Name(AzureResourceTypes.ServiceBusNamespace, region: Require(region));
+
+    /// <summary>
+    /// The regional PHYSICAL Event Hubs namespace name (a primary or secondary of a geo-DR pair). For
+    /// provisioning/failover only — services connect through <see cref="EventHubsNamespace"/>. A region is
+    /// required: a physical namespace is never region-less (that name is reserved for the alias).
+    /// </summary>
+    public static string EventHubsPhysicalNamespaceName(this AzureResourceNamingOptions context, string region) =>
+        context.Name(AzureResourceTypes.EventHubsNamespace, region: Require(region));
 
     // ---- Cosmos (cloud-singleton) --------------------------------------------------------------
 
@@ -136,6 +155,12 @@ public static class AzureResourceNamingOptionsExtensions
             Scope = context.Scope,
             Role = role,
         };
+    }
+
+    private static string Require(string region)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(region);
+        return region;
     }
 
     private static CloudEndpoints Endpoints(AzureResourceNamingOptions context)

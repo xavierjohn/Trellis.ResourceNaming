@@ -31,8 +31,20 @@ public class AzureResourceNamingOptionsTests
         Assert.Equal("ptk-mbr-sbns-prod.servicebus.windows.net", Ctx.ServiceBusNamespace());
 
     [Fact]
-    public void EventHubs_namespace_is_regional() =>
-        Assert.Equal("ptk-mbr-evhns-prod-weu.servicebus.windows.net", Ctx.EventHubsNamespace());
+    public void EventHubs_namespace_is_the_connect_alias() =>
+        Assert.Equal("ptk-mbr-evhns-prod.servicebus.windows.net", Ctx.EventHubsNamespace());
+
+    [Fact]
+    public void ServiceBus_physical_namespace_is_regional() =>
+        Assert.Equal("ptk-mbr-sbns-prod-weu", Ctx.ServiceBusPhysicalNamespaceName("weu"));
+
+    [Fact]
+    public void EventHubs_physical_namespace_is_regional() =>
+        Assert.Equal("ptk-mbr-evhns-prod-neu", Ctx.EventHubsPhysicalNamespaceName("neu"));
+
+    [Fact]
+    public void Physical_namespace_requires_a_region() =>
+        Assert.Throws<ArgumentException>(() => Ctx.ServiceBusPhysicalNamespaceName("  "));
 
     [Fact]
     public void Cosmos_url() =>
