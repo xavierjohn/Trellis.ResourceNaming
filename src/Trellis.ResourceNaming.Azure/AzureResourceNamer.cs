@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -123,7 +124,9 @@ public sealed class AzureResourceNamer : IResourceNamer
     {
         Span<byte> digest = stackalloc byte[32];
         SHA256.HashData(Encoding.UTF8.GetBytes(seed), digest);
-        var value = BitConverter.ToUInt64(digest);
+
+        // Read with a fixed byte order so the suffix is identical on every platform, not host-endian.
+        var value = BinaryPrimitives.ReadUInt64LittleEndian(digest);
 
         Span<char> chars = stackalloc char[5];
         for (var i = 0; i < chars.Length; i++)
