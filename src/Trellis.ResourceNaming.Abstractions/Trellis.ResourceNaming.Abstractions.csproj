@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>Trellis.ResourceNaming.Abstractions</PackageId>
-    <Description>Store- and cloud-agnostic abstractions for convention-based resource naming: the IResourceNamer seam, the request/result model, and the resource-type specification.</Description>
+    <Description>Store- and cloud-agnostic abstractions for convention-based resource naming: the IResourceNamer seam, the naming request model, and the resource-type specification.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
