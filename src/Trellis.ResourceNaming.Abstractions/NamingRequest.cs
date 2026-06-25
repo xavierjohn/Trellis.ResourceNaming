@@ -25,8 +25,9 @@ public sealed record NamingRequest
     public string? Instance { get; init; }
 
     /// <summary>
-    /// Cloud identifier. The Azure implementation expects a <c>KnownClouds</c> value (e.g. <c>AzureCloud</c>)
-    /// so it can resolve endpoints; it also seeds the Shared-scope uniqueness suffix. Never part of the name.
+    /// Cloud identifier. The namer treats it as an opaque token that only seeds the Shared-scope uniqueness
+    /// suffix, so any non-empty value works; endpoint resolution (<c>AzureClouds.ByName</c>) additionally
+    /// requires a <c>KnownClouds</c> value (e.g. <c>AzureCloud</c>). Never part of the name.
     /// </summary>
     public required string Cloud { get; init; }
 

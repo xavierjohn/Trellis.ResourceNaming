@@ -135,7 +135,7 @@ public sealed class AzureResourceNamer : IResourceNamer
             {
                 throw new ArgumentException(
                     $"The {field} token '{token}' must be lowercase alphanumeric ([a-z0-9]); the convention " +
-                    "inserts any separators.",
+                    "inserts separators as needed.",
                     field);
             }
         }

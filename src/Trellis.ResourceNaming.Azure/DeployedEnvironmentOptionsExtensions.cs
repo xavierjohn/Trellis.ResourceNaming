@@ -32,7 +32,7 @@ public static class DeployedEnvironmentOptionsExtensions
 
     /// <summary>The Key Vault name (regional).</summary>
     public static string KeyVaultName(this DeployedEnvironmentOptions context) =>
-        context.Name(AzureResourceTypes.KeyVault, region: context.RegionShortName);
+        context.Name(AzureResourceTypes.KeyVault, region: RequireRegionShortName(context));
 
     /// <summary>The Key Vault URI.</summary>
     public static Uri KeyVaultUri(this DeployedEnvironmentOptions context) =>
@@ -101,11 +101,11 @@ public static class DeployedEnvironmentOptionsExtensions
 
     /// <summary>A user-assigned managed identity name (regional).</summary>
     public static string ManagedIdentityName(this DeployedEnvironmentOptions context, string? instance = null) =>
-        context.Name(AzureResourceTypes.ManagedIdentity, region: context.RegionShortName, instance: instance);
+        context.Name(AzureResourceTypes.ManagedIdentity, region: RequireRegionShortName(context), instance: instance);
 
     /// <summary>An App Service name (regional).</summary>
     public static string AppServiceName(this DeployedEnvironmentOptions context) =>
-        context.Name(AzureResourceTypes.AppService, region: context.RegionShortName);
+        context.Name(AzureResourceTypes.AppService, region: RequireRegionShortName(context));
 
     /// <summary>The Container Registry name.</summary>
     public static string ContainerRegistryName(this DeployedEnvironmentOptions context) =>
@@ -113,11 +113,11 @@ public static class DeployedEnvironmentOptionsExtensions
 
     /// <summary>The Log Analytics workspace name (regional).</summary>
     public static string LogAnalyticsName(this DeployedEnvironmentOptions context) =>
-        context.Name(AzureResourceTypes.LogAnalytics, region: context.RegionShortName);
+        context.Name(AzureResourceTypes.LogAnalytics, region: RequireRegionShortName(context));
 
     /// <summary>The resource group name for the service slice (regional).</summary>
     public static string ResourceGroupName(this DeployedEnvironmentOptions context) =>
-        context.Name(AzureResourceTypes.ResourceGroup, region: context.RegionShortName);
+        context.Name(AzureResourceTypes.ResourceGroup, region: RequireRegionShortName(context));
 
     // ---- Escape hatch for any other type -------------------------------------------------------
 
@@ -150,6 +150,19 @@ public static class DeployedEnvironmentOptionsExtensions
     private static string Require(string region)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(region);
+        return region;
+    }
+
+    private static string RequireRegionShortName(DeployedEnvironmentOptions context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        var region = context.RegionShortName;
+        if (string.IsNullOrWhiteSpace(region))
+        {
+            throw new InvalidOperationException(
+                "A regional resource name requires RegionShortName to be set on the deployed environment.");
+        }
+
         return region;
     }
 

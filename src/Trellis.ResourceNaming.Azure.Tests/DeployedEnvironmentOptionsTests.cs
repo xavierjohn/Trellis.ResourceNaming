@@ -74,4 +74,19 @@ public class DeployedEnvironmentOptionsTests
 
         Assert.Equal("https://ptkmbrstprod.blob.core.usgovcloudapi.net/", usGov.BlobUrl().AbsoluteUri);
     }
+
+    [Fact]
+    public void Regional_name_requires_region_short_name()
+    {
+        var noRegion = new DeployedEnvironmentOptions
+        {
+            System = "ptk", Environment = "prod", Cloud = KnownClouds.AzureCloud,
+        };
+
+        Assert.Throws<InvalidOperationException>(() => noRegion.KeyVaultName());
+        Assert.Throws<InvalidOperationException>(() => noRegion.ManagedIdentityName());
+        Assert.Throws<InvalidOperationException>(() => noRegion.AppServiceName());
+        Assert.Throws<InvalidOperationException>(() => noRegion.LogAnalyticsName());
+        Assert.Throws<InvalidOperationException>(() => noRegion.ResourceGroupName());
+    }
 }
