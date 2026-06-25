@@ -1,40 +1,41 @@
 namespace Trellis.ResourceNaming.Azure;
 
 /// <summary>
-/// Resource-by-resource accessors over an <see cref="AzureResourceNamingOptions"/>. Each method bakes in its
+/// Resource-by-resource accessors over a <see cref="DeployedEnvironmentOptions"/>. Each method bakes in its
 /// resource type — the analog of the ASP template's <c>Get*Url</c> / <c>Get*Uri</c> extensions — so the
-/// caller never threads a resource type or repeats the deployment context.
+/// caller never threads a resource type or repeats the deployment context. Regional names use the deployment's
+/// <see cref="DeployedEnvironmentOptions.RegionShortName"/>.
 /// </summary>
-public static class AzureResourceNamingOptionsExtensions
+public static class DeployedEnvironmentOptionsExtensions
 {
     private static readonly IResourceNamer Namer = new AzureResourceNamer();
 
     // ---- Storage -------------------------------------------------------------------------------
 
     /// <summary>The storage account name. Omit <paramref name="region"/> for the cloud-singleton (shared) account.</summary>
-    public static string StorageName(this AzureResourceNamingOptions context, string? region = null, string? instance = null) =>
+    public static string StorageName(this DeployedEnvironmentOptions context, string? region = null, string? instance = null) =>
         context.Name(AzureResourceTypes.StorageAccount, region, instance);
 
     /// <summary>The Blob endpoint for a storage account.</summary>
-    public static Uri BlobUrl(this AzureResourceNamingOptions context, string? region = null, string? instance = null) =>
+    public static Uri BlobUrl(this DeployedEnvironmentOptions context, string? region = null, string? instance = null) =>
         AzureEndpoints.Blob(context.StorageName(region, instance), Endpoints(context));
 
     /// <summary>The Queue endpoint for a storage account.</summary>
-    public static Uri QueueUrl(this AzureResourceNamingOptions context, string? region = null, string? instance = null) =>
+    public static Uri QueueUrl(this DeployedEnvironmentOptions context, string? region = null, string? instance = null) =>
         AzureEndpoints.Queue(context.StorageName(region, instance), Endpoints(context));
 
     /// <summary>The Table endpoint for a storage account.</summary>
-    public static Uri TableUrl(this AzureResourceNamingOptions context, string? region = null, string? instance = null) =>
+    public static Uri TableUrl(this DeployedEnvironmentOptions context, string? region = null, string? instance = null) =>
         AzureEndpoints.Table(context.StorageName(region, instance), Endpoints(context));
 
     // ---- Key Vault (regional) ------------------------------------------------------------------
 
     /// <summary>The Key Vault name (regional).</summary>
-    public static string KeyVaultName(this AzureResourceNamingOptions context) =>
-        context.Name(AzureResourceTypes.KeyVault, region: context.Region);
+    public static string KeyVaultName(this DeployedEnvironmentOptions context) =>
+        context.Name(AzureResourceTypes.KeyVault, region: context.RegionShortName);
 
     /// <summary>The Key Vault URI.</summary>
-    public static Uri KeyVaultUri(this AzureResourceNamingOptions context) =>
+    public static Uri KeyVaultUri(this DeployedEnvironmentOptions context) =>
         AzureEndpoints.KeyVault(context.KeyVaultName(), Endpoints(context));
 
     // ---- Service Bus / Event Hubs — connect alias (cloud-singleton, no region) ------------------
@@ -45,19 +46,19 @@ public static class AzureResourceNamingOptionsExtensions
     // physical namespace named as the alias.
 
     /// <summary>The Service Bus connect-alias name (cloud-singleton, no region).</summary>
-    public static string ServiceBusName(this AzureResourceNamingOptions context) =>
+    public static string ServiceBusName(this DeployedEnvironmentOptions context) =>
         context.Name(AzureResourceTypes.ServiceBusNamespace);
 
     /// <summary>The Service Bus connect-alias fully-qualified namespace (what <c>ServiceBusClient</c> takes).</summary>
-    public static string ServiceBusNamespace(this AzureResourceNamingOptions context) =>
+    public static string ServiceBusNamespace(this DeployedEnvironmentOptions context) =>
         AzureEndpoints.ServiceBusNamespace(context.ServiceBusName(), Endpoints(context));
 
     /// <summary>The Event Hubs connect-alias name (cloud-singleton, no region).</summary>
-    public static string EventHubsName(this AzureResourceNamingOptions context) =>
+    public static string EventHubsName(this DeployedEnvironmentOptions context) =>
         context.Name(AzureResourceTypes.EventHubsNamespace);
 
     /// <summary>The Event Hubs connect-alias fully-qualified namespace (what the Event Hubs clients take).</summary>
-    public static string EventHubsNamespace(this AzureResourceNamingOptions context) =>
+    public static string EventHubsNamespace(this DeployedEnvironmentOptions context) =>
         AzureEndpoints.EventHubsNamespace(context.EventHubsName(), Endpoints(context));
 
     /// <summary>
@@ -65,7 +66,7 @@ public static class AzureResourceNamingOptionsExtensions
     /// provisioning/failover only — services connect through <see cref="ServiceBusNamespace"/>. A region is
     /// required: a physical namespace is never region-less (that name is reserved for the alias).
     /// </summary>
-    public static string ServiceBusPhysicalNamespaceName(this AzureResourceNamingOptions context, string region) =>
+    public static string ServiceBusPhysicalNamespaceName(this DeployedEnvironmentOptions context, string region) =>
         context.Name(AzureResourceTypes.ServiceBusNamespace, region: Require(region));
 
     /// <summary>
@@ -73,63 +74,75 @@ public static class AzureResourceNamingOptionsExtensions
     /// provisioning/failover only — services connect through <see cref="EventHubsNamespace"/>. A region is
     /// required: a physical namespace is never region-less (that name is reserved for the alias).
     /// </summary>
-    public static string EventHubsPhysicalNamespaceName(this AzureResourceNamingOptions context, string region) =>
+    public static string EventHubsPhysicalNamespaceName(this DeployedEnvironmentOptions context, string region) =>
         context.Name(AzureResourceTypes.EventHubsNamespace, region: Require(region));
 
     // ---- Cosmos (cloud-singleton) --------------------------------------------------------------
 
     /// <summary>The Cosmos DB account name.</summary>
-    public static string CosmosName(this AzureResourceNamingOptions context) =>
+    public static string CosmosName(this DeployedEnvironmentOptions context) =>
         context.Name(AzureResourceTypes.CosmosAccount);
 
     /// <summary>The Cosmos DB account endpoint.</summary>
-    public static Uri CosmosUrl(this AzureResourceNamingOptions context) =>
+    public static Uri CosmosUrl(this DeployedEnvironmentOptions context) =>
         AzureEndpoints.Cosmos(context.CosmosName(), Endpoints(context));
 
     // ---- SQL (cloud-singleton server) ----------------------------------------------------------
 
     /// <summary>The SQL logical server name.</summary>
-    public static string SqlServerName(this AzureResourceNamingOptions context) =>
+    public static string SqlServerName(this DeployedEnvironmentOptions context) =>
         context.Name(AzureResourceTypes.SqlServer);
 
     /// <summary>The SQL logical server fully-qualified name (for the connection string).</summary>
-    public static string SqlServerFqdn(this AzureResourceNamingOptions context) =>
+    public static string SqlServerFqdn(this DeployedEnvironmentOptions context) =>
         AzureEndpoints.SqlServer(context.SqlServerName(), Endpoints(context));
 
     // ---- Names without a connect endpoint ------------------------------------------------------
 
     /// <summary>A user-assigned managed identity name (regional).</summary>
-    public static string ManagedIdentityName(this AzureResourceNamingOptions context, string? instance = null) =>
-        context.Name(AzureResourceTypes.ManagedIdentity, region: context.Region, instance: instance);
+    public static string ManagedIdentityName(this DeployedEnvironmentOptions context, string? instance = null) =>
+        context.Name(AzureResourceTypes.ManagedIdentity, region: context.RegionShortName, instance: instance);
 
     /// <summary>An App Service name (regional).</summary>
-    public static string AppServiceName(this AzureResourceNamingOptions context) =>
-        context.Name(AzureResourceTypes.AppService, region: context.Region);
+    public static string AppServiceName(this DeployedEnvironmentOptions context) =>
+        context.Name(AzureResourceTypes.AppService, region: context.RegionShortName);
 
     /// <summary>The Container Registry name.</summary>
-    public static string ContainerRegistryName(this AzureResourceNamingOptions context) =>
+    public static string ContainerRegistryName(this DeployedEnvironmentOptions context) =>
         context.Name(AzureResourceTypes.ContainerRegistry);
 
     /// <summary>The Log Analytics workspace name (regional).</summary>
-    public static string LogAnalyticsName(this AzureResourceNamingOptions context) =>
-        context.Name(AzureResourceTypes.LogAnalytics, region: context.Region);
+    public static string LogAnalyticsName(this DeployedEnvironmentOptions context) =>
+        context.Name(AzureResourceTypes.LogAnalytics, region: context.RegionShortName);
 
     /// <summary>The resource group name for the service slice (regional).</summary>
-    public static string ResourceGroupName(this AzureResourceNamingOptions context) =>
-        context.Name(AzureResourceTypes.ResourceGroup, region: context.Region);
+    public static string ResourceGroupName(this DeployedEnvironmentOptions context) =>
+        context.Name(AzureResourceTypes.ResourceGroup, region: context.RegionShortName);
+
+    // ---- SLI location ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// The cloud's short location moniker (e.g. <c>public</c>) for the cloud segment of an SLI location id:
+    /// <c>ServiceLevelIndicator.CreateLocationId(env.CloudMoniker(), env.Region)</c>.
+    /// </summary>
+    public static string CloudMoniker(this DeployedEnvironmentOptions context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return AzureClouds.ByName(context.Cloud).LocationMoniker;
+    }
 
     // ---- Escape hatch for any other type -------------------------------------------------------
 
     /// <summary>Computes a name for any resource type, with optional region/instance overrides.</summary>
     public static string Name(
-        this AzureResourceNamingOptions context,
+        this DeployedEnvironmentOptions context,
         ResourceTypeSpec type,
         string? region = null,
         string? instance = null) =>
         Namer.Name(Build(context, type, region, instance));
 
     private static NamingRequest Build(
-        AzureResourceNamingOptions context, ResourceTypeSpec type, string? region, string? instance)
+        DeployedEnvironmentOptions context, ResourceTypeSpec type, string? region, string? instance)
     {
         ArgumentNullException.ThrowIfNull(context);
         return new NamingRequest
@@ -152,7 +165,7 @@ public static class AzureResourceNamingOptionsExtensions
         return region;
     }
 
-    private static CloudEndpoints Endpoints(AzureResourceNamingOptions context)
+    private static CloudEndpoints Endpoints(DeployedEnvironmentOptions context)
     {
         ArgumentNullException.ThrowIfNull(context);
         return AzureClouds.ByName(context.Cloud);

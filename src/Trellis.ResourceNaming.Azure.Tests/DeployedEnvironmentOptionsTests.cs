@@ -2,14 +2,15 @@ using Xunit;
 
 namespace Trellis.ResourceNaming.Azure.Tests;
 
-public class AzureResourceNamingOptionsTests
+public class DeployedEnvironmentOptionsTests
 {
-    private static readonly AzureResourceNamingOptions Ctx = new()
+    private static readonly DeployedEnvironmentOptions Ctx = new()
     {
         System = "ptk",
         Service = "mbr",
         Environment = "prod",
-        Region = "weu",
+        Region = "westus3",
+        RegionShortName = "weu",
         Cloud = KnownClouds.AzureCloud,
     };
 
@@ -20,7 +21,7 @@ public class AzureResourceNamingOptionsTests
     [Fact]
     public void Blob_url_regional_checkpoint() =>
         Assert.Equal("https://ptkmbrstprodweu.blob.core.windows.net/",
-            Ctx.BlobUrl(region: Ctx.Region).AbsoluteUri);
+            Ctx.BlobUrl(region: Ctx.RegionShortName).AbsoluteUri);
 
     [Fact]
     public void KeyVault_uri_is_regional() =>
@@ -65,12 +66,24 @@ public class AzureResourceNamingOptionsTests
     [Fact]
     public void Cloud_drives_the_endpoint_suffix()
     {
-        var usGov = new AzureResourceNamingOptions
+        var usGov = new DeployedEnvironmentOptions
         {
-            System = "ptk", Service = "mbr", Environment = "prod", Region = "weu",
+            System = "ptk", Service = "mbr", Environment = "prod", RegionShortName = "weu",
             Cloud = KnownClouds.AzureUSGovernment,
         };
 
         Assert.Equal("https://ptkmbrstprod.blob.core.usgovcloudapi.net/", usGov.BlobUrl().AbsoluteUri);
+    }
+
+    [Fact]
+    public void Cloud_moniker_for_public_cloud() =>
+        Assert.Equal("public", Ctx.CloudMoniker());
+
+    [Fact]
+    public void Cloud_moniker_for_us_government()
+    {
+        var usGov = new DeployedEnvironmentOptions { System = "ptk", Cloud = KnownClouds.AzureUSGovernment };
+
+        Assert.Equal("usgov", usGov.CloudMoniker());
     }
 }
