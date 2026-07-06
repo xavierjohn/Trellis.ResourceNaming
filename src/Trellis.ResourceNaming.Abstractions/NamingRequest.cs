@@ -31,6 +31,11 @@ public sealed record NamingRequest
     /// </summary>
     public required string Cloud { get; init; }
 
-    /// <summary>Isolation scope. Defaults to <see cref="CloudScope.Isolated"/>.</summary>
-    public CloudScope Scope { get; init; } = CloudScope.Isolated;
+    /// <summary>
+    /// Isolation scope. Defaults to <see cref="CloudScope.Shared"/> because the common target is
+    /// commercial/public Azure, whose shared DNS namespace requires globally-unique names for
+    /// DNS-scoped types; set <see cref="CloudScope.Isolated"/> for air-gapped / sovereign /
+    /// single-tenant clouds that own their DNS namespace.
+    /// </summary>
+    public CloudScope Scope { get; init; } = CloudScope.Shared;
 }

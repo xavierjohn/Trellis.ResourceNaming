@@ -16,6 +16,7 @@ dotnet add package Trellis.ResourceNaming.Azure
 `DeployedEnvironmentOptions` is the deployed-environment context for a service. Set it once; ask by resource:
 
 ```csharp
+using Trellis.ResourceNaming;        // CloudScope
 using Trellis.ResourceNaming.Azure;
 
 var env = new DeployedEnvironmentOptions
@@ -26,6 +27,7 @@ var env = new DeployedEnvironmentOptions
     Region = "westeurope",         // full region name — for display / location
     RegionShortName = "weu",       // short code — the region token used in regional names
     Cloud = KnownClouds.AzureCloud,
+    Scope = CloudScope.Isolated,   // pinned for readable output here; the DEFAULT is Shared (see below)
 };
 
 env.StorageName();          // ptkmbrstprod
@@ -35,8 +37,15 @@ env.ServiceBusNamespace();  // ptk-mbr-sbns-prod.servicebus.windows.net
 env.CosmosUrl();            // https://ptk-mbr-cosmos-prod.documents.azure.com/
 ```
 
-Change `Cloud` to another `KnownClouds` value (e.g. `AzureUSGovernment`) and every endpoint switches its
-DNS suffix automatically — the resource *name* is unchanged.
+`Scope` defaults to `CloudScope.Shared` — the safe default for commercial/public Azure, whose shared DNS
+namespace requires globally-unique names. In `Shared`, globally-DNS-scoped types (Storage, Key Vault, ACR,
+Service Bus/Event Hubs, Cosmos, SQL) get a deterministic 5-char `{u5}` suffix (so `StorageName()` becomes
+`ptkmbrstprod{u5}`). Set `CloudScope.Isolated` for air-gapped / sovereign / single-tenant clouds that own
+their DNS namespace — the example above pins it so the names read cleanly.
+
+Change `Cloud` to another `KnownClouds` value (e.g. `AzureUSGovernment`) and every endpoint switches its DNS
+suffix automatically. In `Isolated` the resource *name* is unchanged; in the default `Shared` scope the cloud
+also seeds the `{u5}` suffix, so DNS-global names differ per cloud.
 
 ## Bind from configuration
 

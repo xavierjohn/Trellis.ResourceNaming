@@ -1,3 +1,4 @@
+using Azure.Core;
 using Xunit;
 
 namespace Trellis.ResourceNaming.Azure.Tests;
@@ -82,12 +83,13 @@ public class AzureEndpointsTests
             Service = "mbr",
             ResourceType = AzureResourceTypes.StorageAccount,
             Environment = "prod",
-            Region = "weu",
-            Cloud = "us",
+            Region = AzureLocation.WestEurope.Name,
+            Cloud = KnownClouds.AzureCloud,
+            Scope = CloudScope.Isolated,
         });
 
         var url = AzureEndpoints.Blob(name, AzureClouds.Public).AbsoluteUri;
 
-        Assert.Equal("https://ptkmbrstprodweu.blob.core.windows.net/", url);
+        Assert.Equal("https://ptkmbrstprodwesteurope.blob.core.windows.net/", url);
     }
 }

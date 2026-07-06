@@ -28,8 +28,13 @@ public sealed class DeployedEnvironmentOptions
     /// <summary>Azure cloud environment — a <see cref="KnownClouds"/> value that selects the endpoint host suffix.</summary>
     public string Cloud { get; set; } = KnownClouds.AzureCloud;
 
-    /// <summary>Isolation scope. Defaults to <see cref="CloudScope.Isolated"/>.</summary>
-    public CloudScope Scope { get; set; } = CloudScope.Isolated;
+    /// <summary>
+    /// Isolation scope. Defaults to <see cref="CloudScope.Shared"/> because the common target is
+    /// commercial/public Azure, whose shared DNS namespace requires globally-unique names for
+    /// DNS-scoped types; set <see cref="CloudScope.Isolated"/> for air-gapped / sovereign /
+    /// single-tenant clouds that own their DNS namespace.
+    /// </summary>
+    public CloudScope Scope { get; set; } = CloudScope.Shared;
 
     /// <summary>Immutable scale-unit / cell ordinal, if the workload is stamped.</summary>
     public string? Stamp { get; set; }

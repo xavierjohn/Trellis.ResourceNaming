@@ -4,6 +4,8 @@ namespace Trellis.ResourceNaming.Azure.Tests;
 
 public class DeployedEnvironmentOptionsTests
 {
+    // These examples assert clean, readable names, so they pin Isolated explicitly.
+    // (The type default is now Shared - see Default_scope_is_shared_* below.)
     private static readonly DeployedEnvironmentOptions Ctx = new()
     {
         System = "ptk",
@@ -12,6 +14,7 @@ public class DeployedEnvironmentOptionsTests
         Region = "westeurope",
         RegionShortName = "weu",
         Cloud = KnownClouds.AzureCloud,
+        Scope = CloudScope.Isolated,
     };
 
     [Fact]
@@ -70,6 +73,7 @@ public class DeployedEnvironmentOptionsTests
         {
             System = "ptk", Service = "mbr", Environment = "prod", RegionShortName = "weu",
             Cloud = KnownClouds.AzureUSGovernment,
+            Scope = CloudScope.Isolated,
         };
 
         Assert.Equal("https://ptkmbrstprod.blob.core.usgovcloudapi.net/", usGov.BlobUrl().AbsoluteUri);
@@ -88,5 +92,22 @@ public class DeployedEnvironmentOptionsTests
         Assert.Throws<InvalidOperationException>(() => noRegion.AppServiceName());
         Assert.Throws<InvalidOperationException>(() => noRegion.LogAnalyticsName());
         Assert.Throws<InvalidOperationException>(() => noRegion.ResourceGroupName());
+    }
+
+    [Fact]
+    public void Default_scope_is_shared_so_dns_global_names_get_a_uniqueness_suffix()
+    {
+        // No Scope set -> the type default (Shared) appends the deterministic 5-char {u5} suffix to
+        // globally-DNS-scoped types like Storage, so a fresh public-cloud deploy can't name-collide.
+        var ctx = new DeployedEnvironmentOptions
+        {
+            System = "ptk", Service = "mbr", Environment = "prod", RegionShortName = "weu",
+            Cloud = KnownClouds.AzureCloud,
+        };
+
+        var name = ctx.StorageName();
+
+        Assert.StartsWith("ptkmbrstprod", name);
+        Assert.Equal("ptkmbrstprod".Length + 5, name.Length);
     }
 }
