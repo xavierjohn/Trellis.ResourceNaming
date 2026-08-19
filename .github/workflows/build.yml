@@ -45,9 +45,27 @@ jobs:
       - name: Test
         run: dotnet test src/Trellis.ResourceNaming.slnx --no-build -c Release
 
+      - name: Pack
+        run: dotnet pack src/Trellis.ResourceNaming.slnx --no-build -c Release -o artifacts
+
       # Packaging is the only place the API-reference delivery wiring is observable. A broken
       # payload path or a suppressed Build asset leaves the build and the tests entirely green
-      # while shipping no documentation at all, so this gate packs and inspects the .nupkg.
+      # while shipping no documentation at all, so this gate inspects the .nupkg itself.
+      #
+      # Verifies the artifacts packed above rather than packing its own copy, so what is
+      # uploaded below is exactly what was checked.
       - name: Verify API reference packaging
         shell: pwsh
-        run: ./build/test-apireference-packaging.ps1 -Configuration Release
+        run: ./build/test-apireference-packaging.ps1 -Configuration Release -PackageDirectory artifacts
+
+      # Uploaded on pull requests too, unlike xavierjohn/Trellis. The failure mode this
+      # repository actually has is a package that builds green and delivers no documentation,
+      # and the cheapest way to confirm a fix is to download the .nupkg from the PR and restore
+      # it into a scratch consumer. Two small packages; the storage is not worth optimising.
+      - name: Upload packages
+        uses: actions/upload-artifact@v7
+        if: ${{ success() }}
+        with:
+          name: nupkg
+          path: artifacts/*.nupkg
+          retention-days: 14
