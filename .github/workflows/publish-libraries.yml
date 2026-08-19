@@ -1,7 +1,7 @@
 # Manual publish of the resource-naming libraries to nuget.org via NuGet Trusted Publishing (OIDC).
 #
 # Defaults to a dry run (pack only). Set dry_run = false to publish. Requires a Trusted Publishing policy on
-# nuget.org for repository owner xavierjohn, repository Trellis.Templates, workflow file
+# nuget.org for repository owner xavierjohn, repository Trellis.ResourceNaming, workflow file
 # publish-libraries.yml (environment empty), plus the NUGET_USER secret. Packs Trellis.ResourceNaming.Abstractions
 # and Trellis.ResourceNaming.Azure (the test project is not packable).
 name: Publish libraries

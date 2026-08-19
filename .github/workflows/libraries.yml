@@ -1,14 +1,16 @@
-# Builds and tests the resource-naming libraries (src/) on every change that touches them.
+# Builds and tests the resource-naming libraries on every change.
+#
+# No path filters: this repository contains nothing but these libraries and the
+# assets that ship with them. The filters existed only to keep library CI from
+# running on template changes back when this lived in xavierjohn/Trellis.Templates.
 name: Libraries
 
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
-    paths: [ 'src/**', 'build/**', 'docs/api_reference/**', '.github/workflows/libraries.yml' ]
   pull_request:
     branches: [ main ]
-    paths: [ 'src/**', 'build/**', 'docs/api_reference/**', '.github/workflows/libraries.yml' ]
 
 permissions:
   contents: read
