@@ -1,10 +1,11 @@
 # Manual publish of the resource-naming libraries to this account's GitHub Packages NuGet feed (alpha channel).
 #
+# This is the INTERNAL/alpha channel. For the public nuget.org release see publish-nuget.yml.
+#
 # Uses the built-in GITHUB_TOKEN (no stored secret). The version is the static VersionPrefix/VersionSuffix from
-# src/Directory.Build.props. This is the internal/alpha channel; for the public, stable nuget.org release use
-# publish-libraries.yml (Trusted Publishing). Packs Trellis.ResourceNaming.Abstractions and
-# Trellis.ResourceNaming.Azure (the test project is not packable).
-name: Publish libraries to GitHub Packages
+# src/Directory.Build.props. Packs Trellis.ResourceNaming.Abstractions and Trellis.ResourceNaming.Azure
+# (the test project is not packable).
+name: Publish to GitHub Packages
 
 on:
   workflow_dispatch:
@@ -15,7 +16,7 @@ permissions:
 
 jobs:
   publish:
-    name: github-packages libraries
+    name: publish to github packages
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -35,6 +36,13 @@ jobs:
 
       - name: Pack
         run: dotnet pack src/Trellis.ResourceNaming.slnx -c Release -o nupkg
+
+      # Same gate as the nuget.org path. The alpha channel is where a doc-less package
+      # would be discovered by a consumer first, so it is not the place to skip the check.
+      # Verifies the artifacts produced above rather than packing its own copy.
+      - name: Verify API reference packaging
+        shell: pwsh
+        run: ./build/test-apireference-packaging.ps1 -Configuration Release -PackageDirectory nupkg
 
       - name: Push to GitHub Packages
         run: >

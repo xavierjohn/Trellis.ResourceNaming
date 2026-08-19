@@ -71,6 +71,24 @@ The third command is not optional before a release. `0.1.0-preview.1` shipped wi
 build and zero documentation inside the package, because nothing inspected the packed
 output; that gate exists so it cannot happen again.
 
+## Releasing
+
+Two channels, both manually dispatched:
+
+| Workflow | Target | Auth |
+|---|---|---|
+| `publish-nuget.yml` — *Publish to NuGet.org* | public nuget.org | Trusted Publishing (OIDC) |
+| `publish-github-packages.yml` — *Publish to GitHub Packages* | internal alpha feed | built-in `GITHUB_TOKEN` |
+
+The nuget.org workflow defaults to a dry run; set `dry_run = false` to publish. Both pack
+once and run the API reference gate against those exact artifacts before pushing them.
+
+The Trusted Publishing policy is bound to the **workflow file name**. Renaming
+`publish-nuget.yml` invalidates the policy and publishing will fail to authenticate until
+the policy is updated to match.
+
+Version comes from `VersionPrefix`/`VersionSuffix` in `src/Directory.Build.props`.
+
 ## History
 
 Extracted from [xavierjohn/Trellis.Templates](https://github.com/xavierjohn/Trellis.Templates)

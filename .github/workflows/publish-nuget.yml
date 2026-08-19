@@ -1,10 +1,15 @@
 # Manual publish of the resource-naming libraries to nuget.org via NuGet Trusted Publishing (OIDC).
 #
+# This is the PUBLIC channel. For the internal alpha channel see publish-github-packages.yml.
+#
 # Defaults to a dry run (pack only). Set dry_run = false to publish. Requires a Trusted Publishing policy on
 # nuget.org for repository owner xavierjohn, repository Trellis.ResourceNaming, workflow file
-# publish-libraries.yml (environment empty), plus the NUGET_USER secret. Packs Trellis.ResourceNaming.Abstractions
+# publish-nuget.yml (environment empty), plus the NUGET_USER secret. Packs Trellis.ResourceNaming.Abstractions
 # and Trellis.ResourceNaming.Azure (the test project is not packable).
-name: Publish libraries
+#
+# The Trusted Publishing policy is bound to this FILE NAME. Renaming this workflow invalidates the policy
+# and the publish step will fail to authenticate until the policy is updated to match.
+name: Publish to NuGet.org
 
 on:
   workflow_dispatch:
@@ -22,7 +27,7 @@ permissions:
 
 jobs:
   publish:
-    name: publish libraries
+    name: publish to nuget.org
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
