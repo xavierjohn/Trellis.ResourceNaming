@@ -18,6 +18,14 @@
          anyone referencing only .Azure - the way almost every consumer references this family.
          It is corrected by PrivateAssets="none" on the ProjectReference, and removing that
          attribute reintroduces the bug with no other visible symptom.
+      4. No PackagePath declares a backslash. This repository already packs the doc at the
+         clean trellis/<name>.md, unlike its sibling repositories, and this check is what
+         keeps it that way. A trailing backslash is a directory marker on Windows and packs
+         correctly there, but on Linux it is not a separator: it normalizes and NuGet appends
+         its own, producing the malformed "trellis//<name>.md". That still satisfies a
+         trellis/*.md glob and still delivers, so the packed-path assertions below can only
+         fail on Linux. This declaration check is platform-independent and is what holds the
+         line on a developer's Windows machine.
 
     It then checks the nuspec listing metadata on both packages: icon, README, and the
     projectUrl/repository URLs. See the comment on that block for why.
@@ -124,6 +132,38 @@ try {
         }
         finally { $zip.Dispose() }
     }
+
+    # --- Declarations: PackagePath must not contain a backslash ------------------------------
+    # Parses the XML rather than scanning text. A line-based regex misses the single-quoted
+    # attribute form (PackagePath='trellis\') and the <PackagePath>trellis\</PackagePath>
+    # metadata element, and would flag the comments that quote the malformed value on purpose.
+    # Property indirection - PackagePath="$(SomeVar)" - is not statically visible; the packed
+    # path assertions below cover that case on Linux.
+    $backslashPaths = @(
+        Get-ChildItem -Path $repoRoot -Recurse -File -Include '*.csproj', '*.props', '*.targets' |
+            Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' } |
+            ForEach-Object {
+                $file = $_
+                $document = [System.Xml.Linq.XDocument]::Load($file.FullName, [System.Xml.Linq.LoadOptions]::SetLineInfo)
+                $relative = $file.FullName.Substring($repoRoot.Length + 1)
+
+                $nodes = @()
+                $nodes += @($document.Descendants() | Where-Object { $_.Name.LocalName -eq 'PackagePath' })
+                $nodes += @($document.Descendants().Attributes() | Where-Object { $_.Name.LocalName -eq 'PackagePath' })
+
+                foreach ($node in $nodes) {
+                    if ($node.Value -like '*\*') {
+                        "${relative}:$(([System.Xml.IXmlLineInfo]$node).LineNumber) -> PackagePath=$($node.Value)"
+                    }
+                }
+            }
+    )
+
+    Write-Host ''
+    Write-Host 'PackagePath declarations'
+    Assert-True ($backslashPaths.Count -eq 0) `
+        'no PackagePath contains a backslash' `
+        "offenders: $($backslashPaths -join ', ')"
 
     # --- Abstractions: payload + copy logic -------------------------------------------------
     $abstractionsId = 'Trellis.ResourceNaming.Abstractions'
