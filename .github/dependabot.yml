@@ -1,0 +1,31 @@
+# Dependabot version update configuration.
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: "nuget"
+    directory: "/"
+    # Monthly to cut PR volume. The schedule affects only version updates;
+    # security updates fire promptly regardless of cadence.
+    schedule:
+      interval: "monthly"
+
+    groups:
+      # This repository has a small dependency surface: xunit and Azure.Core
+      # (test-only). One grouped PR a month is the right volume.
+      testing:
+        patterns:
+          - "xunit*"
+          - "Xunit.*"
+          - "Microsoft.Testing.*"
+      other:
+        patterns:
+          - "*"

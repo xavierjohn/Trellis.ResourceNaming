@@ -2,12 +2,19 @@
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <IsPublishable>false</IsPublishable>
+
+    <!-- xunit.v3 runs on Microsoft.Testing.Platform, which hosts tests in the test
+         executable itself rather than under a VSTest adapter. Both properties are
+         required: MTP needs an entry point, and the runner must be selected explicitly. -->
+    <OutputType>Exe</OutputType>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+
+    <!-- Test method names are Method_Scenario_Expectation. -->
+    <NoWarn>$(NoWarn),CA1707</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.60.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-    <PackageReference Include="xunit" Version="2.9.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Trellis.ResourceNaming.Azure\Trellis.ResourceNaming.Azure.csproj" />
