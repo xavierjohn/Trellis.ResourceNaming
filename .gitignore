@@ -1,4 +1,4 @@
-# Build output
+﻿# Build output
 bin/
 obj/
 [Bb]in/
@@ -24,3 +24,6 @@ _smoke/
 
 # DocFX output
 _site/
+
+# Scratch files used to pass multi-line messages to git/gh
+*.tmp
