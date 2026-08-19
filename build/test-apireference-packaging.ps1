@@ -20,10 +20,19 @@
 
 .NOTES
     Exit code 0 = all checks passed. Non-zero = at least one check failed.
+
+    By default the script packs into a temporary directory and cleans up after itself.
+    Pass -PackageDirectory to verify packages that have ALREADY been packed. The publish
+    workflow uses that mode so the artifacts it inspects are byte-for-byte the artifacts
+    it pushes, rather than a second pack that merely ought to be identical.
 #>
 [CmdletBinding()]
 param(
-    [string] $Configuration = 'Release'
+    [string] $Configuration = 'Release',
+
+    # Verify pre-packed .nupkg files in this directory instead of packing. The directory is
+    # left alone on exit; only a directory this script created is cleaned up.
+    [string] $PackageDirectory
 )
 
 Set-StrictMode -Version Latest
@@ -31,7 +40,14 @@ $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $solution = Join-Path $repoRoot 'src/Trellis.ResourceNaming.slnx'
-$outDir = Join-Path ([System.IO.Path]::GetTempPath()) "rn-pack-gate-$([System.Guid]::NewGuid().ToString('N'))"
+
+$packedHere = [string]::IsNullOrWhiteSpace($PackageDirectory)
+if ($packedHere) {
+    $outDir = Join-Path ([System.IO.Path]::GetTempPath()) "rn-pack-gate-$([System.Guid]::NewGuid().ToString('N'))"
+}
+else {
+    $outDir = (Resolve-Path -Path $PackageDirectory).Path
+}
 
 $failures = [System.Collections.Generic.List[string]]::new()
 
@@ -52,13 +68,21 @@ function Assert-True {
 }
 
 try {
-    New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+    if ($packedHere) {
+        New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 
-    Write-Host "Packing $solution -> $outDir"
-    $packLog = & dotnet pack $solution -c $Configuration -o $outDir 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        $packLog | Write-Host
-        throw "dotnet pack failed with exit code $LASTEXITCODE."
+        Write-Host "Packing $solution -> $outDir"
+        $packLog = & dotnet pack $solution -c $Configuration -o $outDir 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            $packLog | Write-Host
+            throw "dotnet pack failed with exit code $LASTEXITCODE."
+        }
+    }
+    else {
+        Write-Host "Verifying pre-packed output in $outDir"
+        if (-not (Get-ChildItem -Path $outDir -Filter '*.nupkg' -File)) {
+            throw "No .nupkg files found in '$outDir'. Run dotnet pack before invoking with -PackageDirectory."
+        }
     }
 
     # PowerShell 7 already exposes System.IO.Compression.ZipFile; Add-Type is a no-op there and a
@@ -150,5 +174,5 @@ try {
     exit 0
 }
 finally {
-    if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force -ErrorAction SilentlyContinue }
+    if ($packedHere -and (Test-Path $outDir)) { Remove-Item $outDir -Recurse -Force -ErrorAction SilentlyContinue }
 }

@@ -40,16 +40,20 @@ jobs:
           dotnet build src/Trellis.ResourceNaming.slnx -c Release
           dotnet test src/Trellis.ResourceNaming.slnx --no-build -c Release
 
+      - name: Pack
+        run: dotnet pack src/Trellis.ResourceNaming.slnx -c Release -o nupkg
+
       # Last line of defence before shipping. 0.1.0-preview.1 was published with a
       # green build and zero API reference docs inside it, because nothing on the
       # publish path inspected the packed output. PR CI runs this too, but only when
       # the path filter matches — this workflow can be dispatched from any commit.
+      #
+      # Deliberately verifies the artifacts produced by the Pack step above rather
+      # than packing its own copy, so the packages inspected here are the exact bytes
+      # pushed below.
       - name: Verify API reference packaging
         shell: pwsh
-        run: ./build/test-apireference-packaging.ps1 -Configuration Release
-
-      - name: Pack
-        run: dotnet pack src/Trellis.ResourceNaming.slnx -c Release -o nupkg
+        run: ./build/test-apireference-packaging.ps1 -Configuration Release -PackageDirectory nupkg
 
       - name: List packages
         run: ls -lh nupkg/*.nupkg
