@@ -53,7 +53,7 @@ Do not skip the red step. Tests live in `src/Trellis.ResourceNaming.Azure.Tests/
 
 MTP is not VSTest. `--nologo` and `--filter` are **not** valid arguments: passing either makes
 the run exit with code 5 and "Zero tests ran", which looks like a pass in a CI log. Invoke as
-`dotnet test src/Trellis.ResourceNaming.slnx -c Release` and narrow output with `Select-String`
+`dotnet test Trellis.ResourceNaming.slnx -c Release` and narrow output with `Select-String`
 instead. Always confirm the summary reports the expected test total, not zero.
 
 Assert on exact expected name strings. A test that asserts only a prefix or a length will
@@ -89,8 +89,8 @@ Run `./build/test-apireference-packaging.ps1` after touching any of the above.
 ## Validation before handoff
 
 ```powershell
-dotnet build src/Trellis.ResourceNaming.slnx -c Release
-dotnet test  src/Trellis.ResourceNaming.slnx -c Release
+dotnet build Trellis.ResourceNaming.slnx -c Release
+dotnet test  Trellis.ResourceNaming.slnx -c Release
 ./build/test-apireference-packaging.ps1
 ```
 
@@ -102,7 +102,12 @@ The third is not optional when packaging, project references, or the doc are tou
 alpha). Trusted Publishing binds the policy to the **workflow file name** — renaming
 `publish-nuget.yml` breaks authentication until the nuget.org policy is updated to match.
 
-Version comes from `VersionPrefix`/`VersionSuffix` in `src/Directory.Build.props`.
+Version comes from Nerdbank.GitVersioning (`version.json`, `0.1-preview.{height}`), not from
+`VersionPrefix`/`VersionSuffix`. Do not add either property to `src/Directory.Build.props` —
+setting one overrides the computed version and silently restores hand-maintained numbers.
+Only `main` and `release/v*` are public-release refs; other branches get a `-g<commit>`
+suffix and must not be published. Any workflow that builds must check out with
+`fetch-depth: 0`, because git height needs full history.
 
 ## Git and PR rules
 

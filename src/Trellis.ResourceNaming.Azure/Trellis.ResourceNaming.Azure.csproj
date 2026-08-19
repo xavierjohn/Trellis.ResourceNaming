@@ -2,13 +2,9 @@
   <PropertyGroup>
     <PackageId>Trellis.ResourceNaming.Azure</PackageId>
     <Description>An opinionated, CAF-aligned implementation of the Trellis Azure resource-naming convention behind IResourceNamer: workload-first names, condensed dashless types, env length-fallback, a Shared-scope uniqueness suffix, input validation, fail-don't-truncate length enforcement, and endpoint/URL resolution from a single DeployedEnvironmentOptions.</Description>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
-  <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\" />
-  </ItemGroup>
   <ItemGroup>
     <!--
       PrivateAssets="none" so Abstractions' build assets reach consumers of this

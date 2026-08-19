@@ -1,7 +1,8 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Verifies that the ResourceNaming packages actually deliver the LLM API reference.
+    Verifies that the ResourceNaming packages deliver the LLM API reference and carry correct
+    listing metadata.
 
 .DESCRIPTION
     The API reference reaches a consumer only if three independent things hold. Each can break
@@ -17,6 +18,9 @@
          anyone referencing only .Azure - the way almost every consumer references this family.
          It is corrected by PrivateAssets="none" on the ProjectReference, and removing that
          attribute reintroduces the bug with no other visible symptom.
+
+    It then checks the nuspec listing metadata on both packages: icon, README, and the
+    projectUrl/repository URLs. See the comment on that block for why.
 
 .NOTES
     Exit code 0 = all checks passed. Non-zero = at least one check failed.
@@ -39,7 +43,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$solution = Join-Path $repoRoot 'src/Trellis.ResourceNaming.slnx'
+$solution = Join-Path $repoRoot 'Trellis.ResourceNaming.slnx'
 
 $packedHere = [string]::IsNullOrWhiteSpace($PackageDirectory)
 if ($packedHere) {
@@ -163,6 +167,69 @@ try {
              "only $azureId would receive no API reference at all. Restore PrivateAssets=`"none`" on the " +
              "ProjectReference in $azureId.csproj.")
     }
+
+    # --- Both packages: listing metadata ------------------------------------------------------
+    # 0.1.0-preview.2 shipped with no icon on either package, no README on Abstractions, and
+    # projectUrl/repository still pointing at xavierjohn/Trellis.Templates - the repository this
+    # code was extracted from. The stale repository URL is the worst of the three: SourceLink
+    # stamps a real commit SHA next to it, so a consumer stepping into the library is sent to a
+    # commit that does not exist in the repository named. All three passed every check that
+    # existed, because nothing inspected the nuspec.
+    $expectedRepo = 'https://github.com/xavierjohn/Trellis.ResourceNaming'
+
+    # Set-StrictMode turns a missing nuspec element into a terminating "property cannot be found"
+    # error, so $meta.icon would crash the gate on exactly the package it is meant to report on.
+    # Absence is the condition under test, not an error.
+    function Get-MetaValue {
+        param($Metadata, [string] $Name)
+        $property = $Metadata.PSObject.Properties[$Name]
+        if ($property) { return $property.Value }
+        return $null
+    }
+
+    foreach ($id in @($abstractionsId, $azureId)) {
+        $pkg = Get-Nupkg $id
+        $pkgEntries = Get-Entries $pkg
+        $meta = (Get-Nuspec $pkg).package.metadata
+
+        Write-Host ''
+        Write-Host "$id (listing metadata)"
+
+        $icon = Get-MetaValue $meta 'icon'
+        Assert-True ([bool]$icon -and ($pkgEntries -contains $icon)) `
+            "packs the Trellis icon and declares it" `
+            "nuspec <icon>='$icon'; matching entry present: $($pkgEntries -contains $icon)"
+
+        $readme = Get-MetaValue $meta 'readme'
+        Assert-True ([bool]$readme -and ($pkgEntries -contains $readme)) `
+            "packs a listing README and declares it" `
+            "nuspec <readme>='$readme'; matching entry present: $($pkgEntries -contains $readme)"
+
+        $projectUrl = Get-MetaValue $meta 'projectUrl'
+        Assert-True ($projectUrl -eq $expectedRepo) `
+            "points projectUrl at this repository" `
+            "projectUrl='$projectUrl', expected '$expectedRepo'"
+
+        $repository = Get-MetaValue $meta 'repository'
+        $repoUrl = if ($repository) { $repository.url } else { $null }
+        Assert-True ($repoUrl -eq "$expectedRepo.git") `
+            "points repository url at this repository" `
+            ("repository url='$repoUrl', expected '$expectedRepo.git'. A stale URL combined with the " +
+             "SourceLink commit SHA sends debuggers to a commit that does not exist there.")
+    }
+
+    # Symbol packages are deliberately not shipped for this family; DotNet.ReproducibleBuilds is
+    # capable of turning them on, so assert rather than assume. Both formats matter: the modern
+    # .snupkg and the legacy .symbols.nupkg, which is the dangerous one because it ends in .nupkg
+    # and is therefore swept up by the publish workflows' "nupkg/*.nupkg" push glob.
+    $symbolPackages = @(
+        Get-ChildItem -Path $outDir -File |
+            Where-Object { $_.Name -like '*.snupkg' -or $_.Name -like '*.symbols.nupkg' } |
+            ForEach-Object { $_.Name }
+    )
+    Assert-True ($symbolPackages.Count -eq 0) `
+        "produces no symbol packages" `
+        "found: $($symbolPackages -join ', ')"
 
     Write-Host ''
     if ($failures.Count -gt 0) {

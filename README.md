@@ -62,8 +62,8 @@ itself. Fix bugs upstream and re-copy rather than editing it here.
 ## Building
 
 ```powershell
-dotnet build src/Trellis.ResourceNaming.slnx -c Release
-dotnet test  src/Trellis.ResourceNaming.slnx -c Release
+dotnet build Trellis.ResourceNaming.slnx -c Release
+dotnet test  Trellis.ResourceNaming.slnx -c Release
 ./build/test-apireference-packaging.ps1
 ```
 
@@ -87,7 +87,12 @@ The Trusted Publishing policy is bound to the **workflow file name**. Renaming
 `publish-nuget.yml` invalidates the policy and publishing will fail to authenticate until
 the policy is updated to match.
 
-Version comes from `VersionPrefix`/`VersionSuffix` in `src/Directory.Build.props`.
+Version comes from [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning):
+`version.json` at the repository root sets `0.1-preview.{height}`, so the patch/prerelease
+number advances with git height rather than being edited by hand. Builds off `main` (or a
+`release/vX.Y` branch) are public releases and produce a clean `0.1.0-preview.N`; every other
+branch appends a `-g<commit>` suffix, which is why a PR build's package is not publishable.
+Cut a release branch with `nbgv prepare-release`.
 
 ## History
 

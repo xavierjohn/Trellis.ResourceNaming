@@ -42,11 +42,11 @@ jobs:
 
       - name: Build + test (gate)
         run: |
-          dotnet build src/Trellis.ResourceNaming.slnx -c Release
-          dotnet test src/Trellis.ResourceNaming.slnx --no-build -c Release
+          dotnet build Trellis.ResourceNaming.slnx -c Release
+          dotnet test Trellis.ResourceNaming.slnx --no-build -c Release
 
       - name: Pack
-        run: dotnet pack src/Trellis.ResourceNaming.slnx -c Release -o nupkg
+        run: dotnet pack Trellis.ResourceNaming.slnx -c Release -o nupkg
 
       # Last line of defence before shipping. 0.1.0-preview.1 was published with a
       # green build and zero API reference docs inside it, because nothing on the
@@ -62,6 +62,21 @@ jobs:
 
       - name: List packages
         run: ls -lh nupkg/*.nupkg
+
+      # Nerdbank.GitVersioning appends a .g<commit> suffix to versions built from any ref that is
+      # not a public release (main or release/v*). Such a version is a valid package but a dead end
+      # on nuget.org: it can never be superseded by the clean version of the same build. This
+      # workflow is manually dispatched and accepts any ref, so the mistake is one dropdown away.
+      - name: Reject non-public-release versions
+        shell: pwsh
+        run: |
+          $suffixed = @(Get-ChildItem nupkg/*.nupkg | Where-Object { $_.Name -match '\.g[0-9a-f]{8,}\.nupkg$' })
+          if ($suffixed.Count -gt 0) {
+            Write-Host "::error::Refusing to publish a non-public-release version: $($suffixed.Name -join ', ')"
+            Write-Host "Dispatch this workflow from main (or a release/v* branch) instead."
+            exit 1
+          }
+          Write-Host "All packages carry public-release versions."
 
       - name: NuGet login (OIDC trusted publishing)
         id: login
