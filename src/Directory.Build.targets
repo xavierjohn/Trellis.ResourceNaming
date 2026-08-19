@@ -1,0 +1,28 @@
+<Project>
+
+  <!--
+    Icon and listing README for every packable project.
+
+    This lives in Directory.Build.targets rather than Directory.Build.props on purpose.
+    Props is imported before the project body, so $(IsPackable) is still empty there and
+    the condition below could not distinguish the test project from a shipping one.
+    Targets is imported after the body, where IsPackable has its final value.
+
+    The README include is guarded by Exists() so a project without one does not fail on a
+    missing item. Pack still fails loudly with NU5039 in that case, because
+    PackageReadmeFile is declared unconditionally in Directory.Build.props - which is the
+    intent: a package with no listing README should not ship, and 0.1.0-preview.2 shipped
+    Trellis.ResourceNaming.Abstractions with no README and no icon precisely because
+    nothing forced the issue.
+  -->
+  <ItemGroup Condition=" '$(IsPackable)' != 'false' ">
+    <None Include="$(MSBuildThisFileDirectory)../icon.png"
+          Pack="true"
+          PackagePath="/" />
+    <None Include="$(MSBuildProjectDirectory)/README.md"
+          Condition=" Exists('$(MSBuildProjectDirectory)/README.md') "
+          Pack="true"
+          PackagePath="/" />
+  </ItemGroup>
+
+</Project>

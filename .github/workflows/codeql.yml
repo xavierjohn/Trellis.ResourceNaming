@@ -28,6 +28,12 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v7
+      with:
+        # This job builds the solution, and Nerdbank.GitVersioning fails the build outright on a
+        # shallow clone ("Shallow clone lacks the objects required to calculate version height"),
+        # rather than falling back to a default version. CodeQL does not run per-pull-request, so
+        # without this the breakage would first appear on the next push to main.
+        fetch-depth: 0
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v6
@@ -41,10 +47,10 @@ jobs:
         build-mode: manual
 
     - name: Restore dependencies
-      run: dotnet restore src/Trellis.ResourceNaming.slnx
+      run: dotnet restore Trellis.ResourceNaming.slnx
 
     - name: Build
-      run: dotnet build src/Trellis.ResourceNaming.slnx --no-restore -c Release
+      run: dotnet build Trellis.ResourceNaming.slnx --no-restore -c Release
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4

@@ -1,0 +1,35 @@
+<Solution>
+  <Folder Name="/.github/">
+    <File Path=".github/copilot-instructions.md" />
+    <File Path=".github/dependabot.yml" />
+  </Folder>
+  <Folder Name="/.github/workflows/">
+    <File Path=".github/workflows/build.yml" />
+    <File Path=".github/workflows/codeql.yml" />
+    <File Path=".github/workflows/publish-github-packages.yml" />
+    <File Path=".github/workflows/publish-nuget.yml" />
+  </Folder>
+  <Folder Name="/Docs/api_reference/">
+    <File Path="docs/api_reference/trellis-api-resourcenaming.md" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+    <File Path="build/Trellis.ApiReference.targets" />
+    <File Path="build/test-apireference-packaging.ps1" />
+    <File Path="global.json" />
+    <File Path="nuget.config" />
+    <File Path="src/Directory.Build.props" />
+    <File Path="src/Directory.Build.targets" />
+    <File Path="version.json" />
+  </Folder>
+  <Folder Name="/Trellis.ResourceNaming.Abstractions/">
+    <Project Path="src/Trellis.ResourceNaming.Abstractions/Trellis.ResourceNaming.Abstractions.csproj" />
+    <File Path="src/Trellis.ResourceNaming.Abstractions/README.md" />
+  </Folder>
+  <Folder Name="/Trellis.ResourceNaming.Azure/">
+    <Project Path="src/Trellis.ResourceNaming.Azure/Trellis.ResourceNaming.Azure.csproj" />
+    <Project Path="src/Trellis.ResourceNaming.Azure.Tests/Trellis.ResourceNaming.Azure.Tests.csproj" />
+    <File Path="src/Trellis.ResourceNaming.Azure/README.md" />
+  </Folder>
+</Solution>

@@ -8,12 +8,47 @@
     <Authors>Xavier John</Authors>
     <Company>Xavier John</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/xavierjohn/Trellis.Templates</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/xavierjohn/Trellis.Templates.git</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/xavierjohn/Trellis.ResourceNaming</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/xavierjohn/Trellis.ResourceNaming.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <PackageTags>trellis;azure;naming;resource-naming;conventions;caf</PackageTags>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
 
-    <VersionPrefix>0.1.0</VersionPrefix>
-    <VersionSuffix>preview.2</VersionSuffix>
+    <!--
+      Versions come from version.json via Nerdbank.GitVersioning, matching
+      xavierjohn/Trellis and xavierjohn/Trellis.Microservices. VersionPrefix and
+      VersionSuffix are deliberately absent - setting either here would override
+      the computed version and silently reintroduce hand-maintained numbers.
+    -->
+
+    <!--
+      Stop Nerdbank.GitVersioning from exporting cloud build variables from MSBuild.
+
+      Its SetCloudBuildVersionVars target runs once per project and appends to the file named
+      by $GITHUB_ENV. .NET resolves FileMode.Append on Linux to a seek-to-end at open time
+      rather than the O_APPEND flag, so parallel MSBuild nodes write at the same stale offset
+      and tear each other's lines, which the runner rejects with "Unable to process file
+      command 'env'". Nothing here reads those variables as MSBuild properties, and version
+      stamping is unaffected: it comes from GetBuildVersion, not from this target.
+    -->
+    <NBGV_SetCloudBuildVersionVars>false</NBGV_SetCloudBuildVersionVars>
+
+    <!--
+      DotNet.ReproducibleBuilds bundles SourceLink and sets Deterministic,
+      ContinuousIntegrationBuild (under CI) and EmbedUntrackedSources, matching
+      xavierjohn/Trellis and xavierjohn/Trellis.Microservices.
+
+      EmbedUntrackedSources matters here specifically: generated and untracked
+      sources are otherwise absent from the symbol data, so a consumer stepping
+      into the library lands on a missing file.
+    -->
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" Version="3.10.91" PrivateAssets="all" />
+    <PackageReference Include="DotNet.ReproducibleBuilds" Version="2.0.5" PrivateAssets="All" />
+  </ItemGroup>
 </Project>

@@ -2,8 +2,8 @@
 #
 # This is the INTERNAL/alpha channel. For the public nuget.org release see publish-nuget.yml.
 #
-# Uses the built-in GITHUB_TOKEN (no stored secret). The version is the static VersionPrefix/VersionSuffix from
-# src/Directory.Build.props. Packs Trellis.ResourceNaming.Abstractions and Trellis.ResourceNaming.Azure
+# Uses the built-in GITHUB_TOKEN (no stored secret). The version is computed by Nerdbank.GitVersioning from
+# version.json and git height. Packs Trellis.ResourceNaming.Abstractions and Trellis.ResourceNaming.Azure
 # (the test project is not packable).
 name: Publish to GitHub Packages
 
@@ -31,11 +31,11 @@ jobs:
 
       - name: Build + test (gate)
         run: |
-          dotnet build src/Trellis.ResourceNaming.slnx -c Release
-          dotnet test src/Trellis.ResourceNaming.slnx --no-build -c Release
+          dotnet build Trellis.ResourceNaming.slnx -c Release
+          dotnet test Trellis.ResourceNaming.slnx --no-build -c Release
 
       - name: Pack
-        run: dotnet pack src/Trellis.ResourceNaming.slnx -c Release -o nupkg
+        run: dotnet pack Trellis.ResourceNaming.slnx -c Release -o nupkg
 
       # Same gate as the nuget.org path. The alpha channel is where a doc-less package
       # would be discovered by a consumer first, so it is not the place to skip the check.

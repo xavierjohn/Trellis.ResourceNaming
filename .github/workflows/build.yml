@@ -22,6 +22,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Nerdbank.GitVersioning derives the version from git height, so it needs the full
+          # history. A shallow clone yields a wrong (or failed) version rather than an error.
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
@@ -37,16 +41,16 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Restore
-        run: dotnet restore src/Trellis.ResourceNaming.slnx
+        run: dotnet restore Trellis.ResourceNaming.slnx
 
       - name: Build
-        run: dotnet build src/Trellis.ResourceNaming.slnx --no-restore -c Release
+        run: dotnet build Trellis.ResourceNaming.slnx --no-restore -c Release
 
       - name: Test
-        run: dotnet test src/Trellis.ResourceNaming.slnx --no-build -c Release
+        run: dotnet test Trellis.ResourceNaming.slnx --no-build -c Release
 
       - name: Pack
-        run: dotnet pack src/Trellis.ResourceNaming.slnx --no-build -c Release -o artifacts
+        run: dotnet pack Trellis.ResourceNaming.slnx --no-build -c Release -o artifacts
 
       # Packaging is the only place the API-reference delivery wiring is observable. A broken
       # payload path or a suppressed Build asset leaves the build and the tests entirely green
