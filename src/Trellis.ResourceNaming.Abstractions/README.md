@@ -28,7 +28,7 @@ implementation package instead and get this transitively.
 | `IResourceNamer` | The seam. `string Name(NamingRequest request)`. |
 | `NamingRequest` | The naming inputs: `System`, `Service`, `ResourceType`, `Environment`, `Region`, `Stamp`, `Instance`, `Cloud`, `Scope`. |
 | `ResourceTypeSpec` | What a resource type permits: `Abbreviation`, `MinLength`, `MaxLength`, `Separator`, `IsDnsGlobal`. |
-| `CloudScope` | Whether a name must be globally unique (`Shared`) or only locally (`Private`). |
+| `CloudScope` | Whether the target cloud shares a DNS namespace (`Shared`, so globally scoped names get a uniqueness suffix) or is isolated (`Isolated`, air-gapped or sovereign, where no suffix is needed). |
 | `NameSeparator` | The separator a resource type accepts, including *none*. |
 | `ResourceNameOverflowException` | Thrown when a name cannot fit the type's length budget. |
 

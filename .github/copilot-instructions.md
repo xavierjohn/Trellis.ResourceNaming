@@ -105,9 +105,11 @@ alpha). Trusted Publishing binds the policy to the **workflow file name** — re
 Version comes from Nerdbank.GitVersioning (`version.json`, `0.1-preview.{height}`), not from
 `VersionPrefix`/`VersionSuffix`. Do not add either property to `src/Directory.Build.props` —
 setting one overrides the computed version and silently restores hand-maintained numbers.
-Only `main` and `release/v*` are public-release refs; other branches get a `-g<commit>`
-suffix and must not be published. Any workflow that builds must check out with
-`fetch-depth: 0`, because git height needs full history.
+Only `main` and `release/v*` are public-release refs; other branches get a `.g<commit>`
+suffix (for example `0.1.0-preview.10.g898ee61829`) and must not be published. The publish
+guard matches that exact shape, so keep the two in step. Any workflow that builds must check
+out with `fetch-depth: 0` — Nerdbank.GitVersioning fails the build outright on a shallow
+clone with "Shallow clone lacks the objects required to calculate version height".
 
 ## Git and PR rules
 
