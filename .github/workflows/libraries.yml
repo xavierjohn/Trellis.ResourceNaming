@@ -5,10 +5,10 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
-    paths: [ 'src/**', '.github/workflows/libraries.yml' ]
+    paths: [ 'src/**', 'build/**', 'docs/api_reference/**', '.github/workflows/libraries.yml' ]
   pull_request:
     branches: [ main ]
-    paths: [ 'src/**', '.github/workflows/libraries.yml' ]
+    paths: [ 'src/**', 'build/**', 'docs/api_reference/**', '.github/workflows/libraries.yml' ]
 
 permissions:
   contents: read
@@ -34,3 +34,10 @@ jobs:
 
       - name: Test
         run: dotnet test src/Trellis.ResourceNaming.slnx --no-build -c Release
+
+      # Packaging is the only place the API-reference delivery wiring is observable. A broken
+      # payload path or a suppressed Build asset leaves the build and the tests entirely green
+      # while shipping no documentation at all, so this gate packs and inspects the .nupkg.
+      - name: Verify API reference packaging
+        shell: pwsh
+        run: ./build/test-apireference-packaging.ps1 -Configuration Release

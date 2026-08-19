@@ -10,6 +10,15 @@
     <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Trellis.ResourceNaming.Abstractions\Trellis.ResourceNaming.Abstractions.csproj" />
+    <!--
+      PrivateAssets="none" so Abstractions' build assets reach consumers of this
+      package. Abstractions ships the API-reference copy logic in
+      buildTransitive/, and the SDK's default for a ProjectReference emits
+      exclude="Build,Analyzers" on the packed dependency - which suppresses
+      buildTransitive and silently stops the docs from ever landing in a
+      consumer that references only Trellis.ResourceNaming.Azure.
+    -->
+    <ProjectReference Include="..\Trellis.ResourceNaming.Abstractions\Trellis.ResourceNaming.Abstractions.csproj"
+                      PrivateAssets="none" />
   </ItemGroup>
 </Project>

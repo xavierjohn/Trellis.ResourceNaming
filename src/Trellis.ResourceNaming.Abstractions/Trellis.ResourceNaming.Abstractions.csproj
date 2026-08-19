@@ -5,4 +5,40 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
+
+  <!--
+    Ships the LLM-facing API reference for the whole ResourceNaming family (both
+    Abstractions and Azure) plus the copy logic that lands it in the consumer's
+    .github/ directory.
+
+    One doc covers both packages because a single expression routinely crosses
+    the boundary - Azure's catalog combined with Abstractions' ResourceTypeSpec
+    to patch a gap in it. Splitting the doc would force an agent to load both
+    halves to write one line.
+
+    Abstractions owns it because .Azure depends on it, so a reference to either
+    package delivers the doc.
+
+    The targets file is packed to both build/ and buildTransitive/ so it applies
+    whether the package is referenced directly or pulled in through .Azure.
+
+    Paths use forward slashes deliberately. On Windows the trailing backslash in
+    PackagePath="trellis\" is recognized as a directory marker and the doc lands at
+    trellis/<name>.md. On Linux the backslash is normalized to "trellis/" and NuGet
+    then appends its own separator, so the doc lands at the malformed "trellis//<name>.md".
+    That still satisfies a trellis/*.md glob, which is why the difference survives a
+    casual check - the published Trellis.Core packages carry the double slash today.
+    Forward slashes produce the clean path on every platform.
+  -->
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)../../docs/api_reference/trellis-api-resourcenaming.md"
+          Pack="true"
+          PackagePath="trellis/" />
+    <None Include="$(MSBuildThisFileDirectory)../../build/Trellis.ApiReference.targets"
+          Pack="true"
+          PackagePath="build/$(PackageId).targets" />
+    <None Include="$(MSBuildThisFileDirectory)../../build/Trellis.ApiReference.targets"
+          Pack="true"
+          PackagePath="buildTransitive/$(PackageId).targets" />
+  </ItemGroup>
 </Project>
