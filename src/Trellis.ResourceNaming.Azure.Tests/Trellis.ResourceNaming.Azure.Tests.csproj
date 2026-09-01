@@ -14,7 +14,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.60.0" />
-    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="xunit.v3" Version="4.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Trellis.ResourceNaming.Azure\Trellis.ResourceNaming.Azure.csproj" />
