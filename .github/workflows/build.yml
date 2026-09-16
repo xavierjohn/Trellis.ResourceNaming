@@ -19,6 +19,10 @@ jobs:
   build-test:
     name: build + test
     runs-on: ubuntu-latest
+    # Only protected release refs can select the environment that holds the private key.
+    # Pull requests and unprotected manual runs use an environment with no signing secret.
+    environment:
+      name: ${{ github.event_name != 'pull_request' && github.ref_protected && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/v')) && 'strong-name-signing' || 'ci' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -34,8 +38,14 @@ jobs:
 
       # Never expose the private key to pull-request code. Those builds use the committed
       # public key and PublicSign, preserving assembly identity without disclosing the signer.
+      - name: Install strong-name verifier
+        if: ${{ github.event_name != 'pull_request' && github.ref_protected && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/v')) }}
+        run: |
+          sudo apt-get update --quiet
+          sudo apt-get install --yes --no-install-recommends --quiet mono-devel
+
       - name: Configure full strong-name signing
-        if: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/v')) }}
+        if: ${{ github.event_name != 'pull_request' && github.ref_protected && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/v')) }}
         shell: pwsh
         env:
           STRONG_NAME_KEY_BASE64: ${{ secrets.STRONG_NAME_KEY_BASE64 }}
@@ -64,7 +74,7 @@ jobs:
       - name: Verify strong-name signing
         shell: pwsh
         env:
-          REQUIRE_FULL_SIGNATURE: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/v')) }}
+          REQUIRE_FULL_SIGNATURE: ${{ github.event_name != 'pull_request' && github.ref_protected && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/v')) }}
         run: |
           $parameters = @{ PackageDirectory = 'artifacts' }
           if ($env:REQUIRE_FULL_SIGNATURE -eq 'true') {
@@ -95,6 +105,11 @@ jobs:
           retention-days: 14
 
       - name: Remove strong-name key
-        if: ${{ always() && env.StrongNameKeyFile != '' }}
+        if: ${{ always() }}
         shell: pwsh
-        run: Remove-Item -LiteralPath $env:StrongNameKeyFile -Force -ErrorAction Stop
+        run: |
+          $keyPath = Join-Path $env:RUNNER_TEMP 'Trellis.ResourceNaming.snk'
+          if (Test-Path -LiteralPath $keyPath -PathType Leaf) {
+            Remove-Item -LiteralPath $keyPath -Force -ErrorAction Stop
+            Write-Host "Removed the materialized strong-name key."
+          }

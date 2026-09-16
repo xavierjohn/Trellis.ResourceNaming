@@ -15,6 +15,17 @@ $expectedAssemblies = @(
     'Trellis.ResourceNaming.Abstractions',
     'Trellis.ResourceNaming.Azure'
 )
+$expectedPublicKeyPath = Join-Path $PSScriptRoot 'Trellis.ResourceNaming.PublicKey.snk'
+$expectedPublicKey = [Convert]::ToBase64String(
+    [IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $expectedPublicKeyPath).Path))
+
+$strongNameVerifier = $null
+if ($RequireFullSignature) {
+    $strongNameVerifier = Get-Command sn -CommandType Application -ErrorAction SilentlyContinue
+    if ($null -eq $strongNameVerifier) {
+        throw "The 'sn' strong-name verifier is required for cryptographic signature validation."
+    }
+}
 
 $packagePath = (Resolve-Path -LiteralPath $PackageDirectory).Path
 $packages = @(
@@ -71,6 +82,12 @@ try {
                     throw "$assemblyName has public key token '$actualPublicKeyToken'; expected '$expectedPublicKeyToken'."
                 }
 
+                $actualPublicKey = $identity.GetPublicKey()
+                if ($null -eq $actualPublicKey -or
+                    [Convert]::ToBase64String($actualPublicKey) -ne $expectedPublicKey) {
+                    throw "$assemblyName does not contain the expected strong-name public key."
+                }
+
                 $assemblyStream = [IO.File]::OpenRead($assemblyPath)
                 $peReader = [System.Reflection.PortableExecutable.PEReader]::new($assemblyStream)
                 try {
@@ -90,17 +107,61 @@ try {
                     }
 
                     if ($RequireFullSignature) {
-                        $sectionData = $peReader.GetSectionData($signatureDirectory.RelativeVirtualAddress)
-                        $signature = [byte[]]$sectionData.GetContent(0, $signatureDirectory.Size)
+                        $signatureSection = $peReader.PEHeaders.SectionHeaders |
+                            Where-Object {
+                                $signatureDirectory.RelativeVirtualAddress -ge $_.VirtualAddress -and
+                                $signatureDirectory.RelativeVirtualAddress -lt
+                                    ($_.VirtualAddress + $_.SizeOfRawData)
+                            } |
+                            Select-Object -First 1
 
-                        if (-not ($signature | Where-Object { $_ -ne 0 } | Select-Object -First 1)) {
-                            throw "$assemblyName is public-signed only; a full strong-name signature is required."
+                        if ($null -eq $signatureSection) {
+                            throw "$assemblyName has an invalid strong-name signature location."
                         }
+
+                        $signatureFileOffset = $signatureSection.PointerToRawData +
+                            ($signatureDirectory.RelativeVirtualAddress - $signatureSection.VirtualAddress)
                     }
                 }
                 finally {
                     $peReader.Dispose()
                     $assemblyStream.Dispose()
+                }
+
+                if ($RequireFullSignature) {
+                    $verificationOutput = @(
+                        & $strongNameVerifier.Source -q -vf $assemblyPath 2>&1
+                    )
+                    $verificationExitCode = $LASTEXITCODE
+                    if ($verificationExitCode -ne 0) {
+                        $detail = $verificationOutput -join [Environment]::NewLine
+                        throw "$assemblyName failed cryptographic strong-name verification (exit $verificationExitCode).`n$detail"
+                    }
+
+                    $tamperedAssemblyPath = Join-Path $inspectionDirectory "$assemblyName.tampered.dll"
+                    Copy-Item -LiteralPath $assemblyPath -Destination $tamperedAssemblyPath
+                    $tamperedAssembly = [IO.File]::Open(
+                        $tamperedAssemblyPath,
+                        [IO.FileMode]::Open,
+                        [IO.FileAccess]::ReadWrite,
+                        [IO.FileShare]::None)
+                    try {
+                        $tamperedAssembly.Position = $signatureFileOffset
+                        $signatureByte = $tamperedAssembly.ReadByte()
+                        if ($signatureByte -lt 0) {
+                            throw "$assemblyName has an invalid strong-name signature offset."
+                        }
+                        $tamperedAssembly.Position = $signatureFileOffset
+                        $tamperedAssembly.WriteByte([byte]($signatureByte -bxor 1))
+                    }
+                    finally {
+                        $tamperedAssembly.Dispose()
+                    }
+
+                    $null = & $strongNameVerifier.Source -q -vf $tamperedAssemblyPath 2>&1
+                    if ($LASTEXITCODE -eq 0) {
+                        throw "The strong-name verifier accepted a deliberately corrupted signature for $assemblyName."
+                    }
                 }
 
                 $null = $verifiedAssemblies.Add($assemblyName)

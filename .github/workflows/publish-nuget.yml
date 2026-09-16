@@ -4,7 +4,8 @@
 #
 # Defaults to a dry run (pack only). Set dry_run = false to publish. Requires a Trusted Publishing policy on
 # nuget.org for repository owner xavierjohn, repository Trellis.ResourceNaming, workflow file
-# publish-nuget.yml (environment empty), plus the NUGET_USER and STRONG_NAME_KEY_BASE64 secrets.
+# publish-nuget.yml and environment empty for the publish job, plus the NUGET_USER repository
+# secret and the STRONG_NAME_KEY_BASE64 secret in the protected strong-name-signing environment.
 # Packs Trellis.ResourceNaming.Abstractions and Trellis.ResourceNaming.Azure (the test project is not packable).
 #
 # The Trusted Publishing policy is bound to this FILE NAME. Renaming this workflow invalidates the policy
@@ -21,14 +22,33 @@ on:
         type: choice
         options: [ 'true', 'false' ]
 
-permissions:
-  contents: read
-  id-token: write
+permissions: {}
 
 jobs:
-  publish:
-    name: publish to nuget.org
+  validate-ref:
+    name: validate protected release ref
     runs-on: ubuntu-latest
+    steps:
+      - name: Require a protected public-release ref
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_PROTECTED -ne 'true') {
+            Write-Host "::error::Signing and publishing require a protected branch."
+            exit 1
+          }
+          if ($env:GITHUB_REF -ne 'refs/heads/main' -and
+              $env:GITHUB_REF -notlike 'refs/heads/release/v*') {
+            Write-Host "::error::Dispatch from main or a protected release/v* branch."
+            exit 1
+          }
+
+  build-package:
+    name: build signed packages
+    needs: validate-ref
+    runs-on: ubuntu-latest
+    environment: strong-name-signing
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -39,6 +59,11 @@ jobs:
         uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+
+      - name: Install strong-name verifier
+        run: |
+          sudo apt-get update --quiet
+          sudo apt-get install --yes --no-install-recommends --quiet mono-devel
 
       - name: Configure full strong-name signing
         shell: pwsh
@@ -60,8 +85,7 @@ jobs:
 
       # Last line of defence before shipping. 0.1.0-preview.1 was published with a
       # green build and zero API reference docs inside it, because nothing on the
-      # publish path inspected the packed output. PR CI runs this too, but only when
-      # the path filter matches — this workflow can be dispatched from any commit.
+      # publish path inspected the packed output.
       #
       # Deliberately verifies the artifacts produced by the Pack step above rather
       # than packing its own copy, so the packages inspected here are the exact bytes
@@ -70,13 +94,46 @@ jobs:
         shell: pwsh
         run: ./build/test-apireference-packaging.ps1 -Configuration Release -PackageDirectory nupkg
 
+      - name: Upload verified packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: signed-nupkg
+          path: nupkg/*.nupkg
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Remove strong-name key
+        if: ${{ always() }}
+        shell: pwsh
+        run: |
+          $keyPath = Join-Path $env:RUNNER_TEMP 'Trellis.ResourceNaming.snk'
+          if (Test-Path -LiteralPath $keyPath -PathType Leaf) {
+            Remove-Item -LiteralPath $keyPath -Force -ErrorAction Stop
+            Write-Host "Removed the materialized strong-name key."
+          }
+
+  publish:
+    name: publish to nuget.org
+    needs: build-package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download verified packages
+        uses: actions/download-artifact@v8
+        with:
+          name: signed-nupkg
+          path: nupkg
+
       - name: List packages
         run: ls -lh nupkg/*.nupkg
 
       # Nerdbank.GitVersioning appends a .g<commit> suffix to versions built from any ref that is
       # not a public release (main or release/v*). Such a version is a valid package but a dead end
       # on nuget.org: it can never be superseded by the clean version of the same build. This
-      # workflow is manually dispatched and accepts any ref, so the mistake is one dropdown away.
+      # The validation job already rejects untrusted refs; this is a second check on the
+      # downloaded package bytes immediately before requesting publish credentials.
       - name: Reject non-public-release versions
         shell: pwsh
         run: |
@@ -108,8 +165,3 @@ jobs:
         run: |
           echo "DRY RUN — packages built but NOT published. Set dry_run = false to publish:"
           ls -lh nupkg/*.nupkg
-
-      - name: Remove strong-name key
-        if: ${{ always() && env.StrongNameKeyFile != '' }}
-        shell: pwsh
-        run: Remove-Item -LiteralPath $env:StrongNameKeyFile -Force -ErrorAction Stop

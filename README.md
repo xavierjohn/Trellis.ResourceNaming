@@ -75,9 +75,10 @@ output; that gate exists so it cannot happen again.
 
 Both shipping assemblies have the strong-name public key token `30edd03a0eb2b9d7`. Local
 and pull-request builds use the committed public key with `PublicSign`, preserving that
-assembly identity without exposing the private key. Trusted branch and publish workflows
-materialize the private key from the `STRONG_NAME_KEY_BASE64` Actions secret and reject
-packages whose DLLs do not contain full signatures.
+assembly identity without exposing the private key. Protected branch and publish workflows
+materialize the private key from the `STRONG_NAME_KEY_BASE64` secret in the protected
+`strong-name-signing` environment. Mono's Strong Name Tool cryptographically verifies each
+packed DLL and confirms that a deliberately corrupted signature is rejected.
 
 The private `.snk` must never be committed. Rotating it changes assembly identity and is a
 breaking change for consumers.
@@ -91,9 +92,9 @@ Two channels, both manually dispatched:
 | `publish-nuget.yml` — *Publish to NuGet.org* | public nuget.org | Trusted Publishing (OIDC) |
 | `publish-github-packages.yml` — *Publish to GitHub Packages* | internal alpha feed | built-in `GITHUB_TOKEN` |
 
-The nuget.org workflow defaults to a dry run; set `dry_run = false` to publish. Both pack
-once and run the full-signature and API reference gates against those exact artifacts
-before pushing them.
+The nuget.org workflow defaults to a dry run; set `dry_run = false` to publish. Both
+workflows require `main` or a protected `release/v*` branch, pack once, and run the
+full-signature and API reference gates against those exact artifacts before pushing them.
 
 The Trusted Publishing policy is bound to the **workflow file name**. Renaming
 `publish-nuget.yml` invalidates the policy and publishing will fail to authenticate until
