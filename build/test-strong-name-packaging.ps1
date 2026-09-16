@@ -10,6 +10,48 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Invoke-StrongNameVerifier {
+    param(
+        [Parameter(Mandatory)]
+        [string] $VerifierPath,
+
+        [Parameter(Mandatory)]
+        [string] $AssemblyPath
+    )
+
+    $startInfo = [Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $VerifierPath
+    $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    $startInfo.ArgumentList.Add('-q')
+    $startInfo.ArgumentList.Add('-vf')
+    $startInfo.ArgumentList.Add($AssemblyPath)
+
+    $process = [Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    try {
+        if (-not $process.Start()) {
+            throw "Failed to start strong-name verifier '$VerifierPath'."
+        }
+
+        $standardOutput = $process.StandardOutput.ReadToEndAsync()
+        $standardError = $process.StandardError.ReadToEndAsync()
+        $process.WaitForExit()
+
+        $output = $standardOutput.GetAwaiter().GetResult()
+        $errorOutput = $standardError.GetAwaiter().GetResult()
+        [pscustomobject]@{
+            ExitCode = $process.ExitCode
+            Output = @($output.Trim(), $errorOutput.Trim()) |
+                Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        }
+    }
+    finally {
+        $process.Dispose()
+    }
+}
+
 $expectedPublicKeyToken = '30edd03a0eb2b9d7'
 $expectedAssemblies = @(
     'Trellis.ResourceNaming.Abstractions',
@@ -130,13 +172,10 @@ try {
                 }
 
                 if ($RequireFullSignature) {
-                    $verificationOutput = @(
-                        & $strongNameVerifier.Source -q -vf $assemblyPath 2>&1
-                    )
-                    $verificationExitCode = $LASTEXITCODE
-                    if ($verificationExitCode -ne 0) {
-                        $detail = $verificationOutput -join [Environment]::NewLine
-                        throw "$assemblyName failed cryptographic strong-name verification (exit $verificationExitCode).`n$detail"
+                    $verification = Invoke-StrongNameVerifier $strongNameVerifier.Source $assemblyPath
+                    if ($verification.ExitCode -ne 0) {
+                        $detail = $verification.Output -join [Environment]::NewLine
+                        throw "$assemblyName failed cryptographic strong-name verification (exit $($verification.ExitCode)).`n$detail"
                     }
 
                     $tamperedAssemblyPath = Join-Path $inspectionDirectory "$assemblyName.tampered.dll"
@@ -159,8 +198,10 @@ try {
                         $tamperedAssembly.Dispose()
                     }
 
-                    $null = & $strongNameVerifier.Source -q -vf $tamperedAssemblyPath 2>&1
-                    if ($LASTEXITCODE -eq 0) {
+                    $tamperedVerification = Invoke-StrongNameVerifier `
+                        $strongNameVerifier.Source `
+                        $tamperedAssemblyPath
+                    if ($tamperedVerification.ExitCode -eq 0) {
                         throw "The strong-name verifier accepted a deliberately corrupted signature for $assemblyName."
                     }
                 }
