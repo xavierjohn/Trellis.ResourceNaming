@@ -21,7 +21,8 @@ $expectedPublicKey = [Convert]::ToBase64String(
 
 $strongNameVerifier = $null
 if ($RequireFullSignature) {
-    $strongNameVerifier = Get-Command sn -CommandType Application -ErrorAction SilentlyContinue
+    $strongNameVerifier = Get-Command sn -CommandType Application -ErrorAction SilentlyContinue |
+        Select-Object -First 1
     if ($null -eq $strongNameVerifier) {
         throw "The 'sn' strong-name verifier is required for cryptographic signature validation."
     }
