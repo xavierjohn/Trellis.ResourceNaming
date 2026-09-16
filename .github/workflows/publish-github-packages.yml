@@ -2,22 +2,42 @@
 #
 # This is the INTERNAL/alpha channel. For the public nuget.org release see publish-nuget.yml.
 #
-# Uses the built-in GITHUB_TOKEN for publishing and STRONG_NAME_KEY_BASE64 for assembly signing.
-# The version is computed by Nerdbank.GitVersioning from version.json and git height. Packs
-# Trellis.ResourceNaming.Abstractions and Trellis.ResourceNaming.Azure (the test project is not packable).
+# Uses the built-in GITHUB_TOKEN for publishing and the STRONG_NAME_KEY_BASE64 secret from
+# the protected strong-name-signing environment for assembly signing. The version is computed
+# by Nerdbank.GitVersioning from version.json and git height. Packs Trellis.ResourceNaming.Abstractions
+# and Trellis.ResourceNaming.Azure (the test project is not packable).
 name: Publish to GitHub Packages
 
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
-  packages: write
+permissions: {}
 
 jobs:
-  publish:
-    name: publish to github packages
+  validate-ref:
+    name: validate protected release ref
     runs-on: ubuntu-latest
+    steps:
+      - name: Require a protected public-release ref
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_PROTECTED -ne 'true') {
+            Write-Host "::error::Signing and publishing require a protected branch."
+            exit 1
+          }
+          if ($env:GITHUB_REF -ne 'refs/heads/main' -and
+              $env:GITHUB_REF -notlike 'refs/heads/release/v*') {
+            Write-Host "::error::Dispatch from main or a protected release/v* branch."
+            exit 1
+          }
+
+  build-package:
+    name: build signed packages
+    needs: validate-ref
+    runs-on: ubuntu-latest
+    environment: strong-name-signing
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -28,6 +48,11 @@ jobs:
         uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+
+      - name: Install strong-name verifier
+        run: |
+          sudo apt-get update --quiet
+          sudo apt-get install --yes --no-install-recommends --quiet mono-devel
 
       - name: Configure full strong-name signing
         shell: pwsh
@@ -54,14 +79,40 @@ jobs:
         shell: pwsh
         run: ./build/test-apireference-packaging.ps1 -Configuration Release -PackageDirectory nupkg
 
+      - name: Upload verified packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: signed-nupkg
+          path: nupkg/*.nupkg
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Remove strong-name key
+        if: ${{ always() }}
+        shell: pwsh
+        run: |
+          $keyPath = Join-Path $env:RUNNER_TEMP 'Trellis.ResourceNaming.snk'
+          if (Test-Path -LiteralPath $keyPath -PathType Leaf) {
+            Remove-Item -LiteralPath $keyPath -Force -ErrorAction Stop
+            Write-Host "Removed the materialized strong-name key."
+          }
+
+  publish:
+    name: publish to github packages
+    needs: build-package
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Download verified packages
+        uses: actions/download-artifact@v8
+        with:
+          name: signed-nupkg
+          path: nupkg
+
       - name: Push to GitHub Packages
         run: >
           dotnet nuget push "nupkg/*.nupkg"
           --api-key ${{ secrets.GITHUB_TOKEN }}
           --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
           --skip-duplicate
-
-      - name: Remove strong-name key
-        if: ${{ always() && env.StrongNameKeyFile != '' }}
-        shell: pwsh
-        run: Remove-Item -LiteralPath $env:StrongNameKeyFile -Force -ErrorAction Stop
