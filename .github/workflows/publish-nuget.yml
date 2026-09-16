@@ -131,7 +131,7 @@ jobs:
 
       # Nerdbank.GitVersioning appends a .g<commit> suffix to versions built from any ref that is
       # not a public release (main or release/v*). Such a version is a valid package but a dead end
-      # on nuget.org: it can never be superseded by the clean version of the same build. This
+      # on nuget.org: it can never be superseded by the clean version of the same build.
       # The validation job already rejects untrusted refs; this is a second check on the
       # downloaded package bytes immediately before requesting publish credentials.
       - name: Reject non-public-release versions

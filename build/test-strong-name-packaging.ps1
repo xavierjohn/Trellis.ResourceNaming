@@ -84,7 +84,7 @@ try {
 
                 $actualPublicKey = $identity.GetPublicKey()
                 if ($null -eq $actualPublicKey -or
-                    [Convert]::ToBase64String($actualPublicKey) -ne $expectedPublicKey) {
+                    [Convert]::ToBase64String($actualPublicKey) -cne $expectedPublicKey) {
                     throw "$assemblyName does not contain the expected strong-name public key."
                 }
 
