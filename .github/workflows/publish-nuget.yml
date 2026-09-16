@@ -4,8 +4,8 @@
 #
 # Defaults to a dry run (pack only). Set dry_run = false to publish. Requires a Trusted Publishing policy on
 # nuget.org for repository owner xavierjohn, repository Trellis.ResourceNaming, workflow file
-# publish-nuget.yml (environment empty), plus the NUGET_USER secret. Packs Trellis.ResourceNaming.Abstractions
-# and Trellis.ResourceNaming.Azure (the test project is not packable).
+# publish-nuget.yml (environment empty), plus the NUGET_USER and STRONG_NAME_KEY_BASE64 secrets.
+# Packs Trellis.ResourceNaming.Abstractions and Trellis.ResourceNaming.Azure (the test project is not packable).
 #
 # The Trusted Publishing policy is bound to this FILE NAME. Renaming this workflow invalidates the policy
 # and the publish step will fail to authenticate until the policy is updated to match.
@@ -40,6 +40,12 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Configure full strong-name signing
+        shell: pwsh
+        env:
+          STRONG_NAME_KEY_BASE64: ${{ secrets.STRONG_NAME_KEY_BASE64 }}
+        run: ./build/configure-strong-name-signing.ps1
+
       - name: Build + test (gate)
         run: |
           dotnet build Trellis.ResourceNaming.slnx -c Release
@@ -47,6 +53,10 @@ jobs:
 
       - name: Pack
         run: dotnet pack Trellis.ResourceNaming.slnx -c Release -o nupkg
+
+      - name: Verify full strong-name signatures
+        shell: pwsh
+        run: ./build/test-strong-name-packaging.ps1 -PackageDirectory nupkg -RequireFullSignature
 
       # Last line of defence before shipping. 0.1.0-preview.1 was published with a
       # green build and zero API reference docs inside it, because nothing on the
@@ -98,3 +108,8 @@ jobs:
         run: |
           echo "DRY RUN — packages built but NOT published. Set dry_run = false to publish:"
           ls -lh nupkg/*.nupkg
+
+      - name: Remove strong-name key
+        if: ${{ always() && env.StrongNameKeyFile != '' }}
+        shell: pwsh
+        run: Remove-Item -LiteralPath $env:StrongNameKeyFile -Force -ErrorAction Stop

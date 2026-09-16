@@ -50,7 +50,7 @@ compile error.
 
 ```
 src/      the two packages and their tests
-build/    API reference packaging: delivery targets and the CI gate that verifies it
+build/    API reference delivery and package-signing gates
 docs/     the LLM API reference that ships in the package
 ```
 
@@ -71,6 +71,17 @@ The third command is not optional before a release. `0.1.0-preview.1` shipped wi
 build and zero documentation inside the package, because nothing inspected the packed
 output; that gate exists so it cannot happen again.
 
+## Strong-name signing
+
+Both shipping assemblies have the strong-name public key token `30edd03a0eb2b9d7`. Local
+and pull-request builds use the committed public key with `PublicSign`, preserving that
+assembly identity without exposing the private key. Trusted branch and publish workflows
+materialize the private key from the `STRONG_NAME_KEY_BASE64` Actions secret and reject
+packages whose DLLs do not contain full signatures.
+
+The private `.snk` must never be committed. Rotating it changes assembly identity and is a
+breaking change for consumers.
+
 ## Releasing
 
 Two channels, both manually dispatched:
@@ -81,7 +92,8 @@ Two channels, both manually dispatched:
 | `publish-github-packages.yml` — *Publish to GitHub Packages* | internal alpha feed | built-in `GITHUB_TOKEN` |
 
 The nuget.org workflow defaults to a dry run; set `dry_run = false` to publish. Both pack
-once and run the API reference gate against those exact artifacts before pushing them.
+once and run the full-signature and API reference gates against those exact artifacts
+before pushing them.
 
 The Trusted Publishing policy is bound to the **workflow file name**. Renaming
 `publish-nuget.yml` invalidates the policy and publishing will fail to authenticate until
