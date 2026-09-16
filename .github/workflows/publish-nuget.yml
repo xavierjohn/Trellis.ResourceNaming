@@ -117,7 +117,6 @@ jobs:
     needs: build-package
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       id-token: write
     steps:
       - name: Download verified packages
