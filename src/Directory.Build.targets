@@ -1,6 +1,35 @@
 <Project>
 
   <!--
+    Shipping assemblies always carry the same strong-name identity. Local and pull-request
+    builds use the committed public key with PublicSign; trusted GitHub workflows replace it
+    with the private key supplied through StrongNameKeyFile and require a full signature.
+  -->
+  <PropertyGroup Condition=" '$(IsPackable)' != 'false' ">
+    <TrellisStrongNamePublicKeyFile>$(MSBuildThisFileDirectory)../build/Trellis.ResourceNaming.PublicKey.snk</TrellisStrongNamePublicKeyFile>
+    <AssemblyOriginatorKeyFile Condition=" '$(StrongNameKeyFile)' == '' ">$(TrellisStrongNamePublicKeyFile)</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile Condition=" '$(StrongNameKeyFile)' != '' ">$(StrongNameKeyFile)</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition=" '$(StrongNameKeyFile)' == '' ">true</PublicSign>
+    <PublicSign Condition=" '$(StrongNameKeyFile)' != '' ">false</PublicSign>
+  </PropertyGroup>
+
+  <Target Name="ValidateTrellisStrongNameSigning"
+          BeforeTargets="CoreCompile"
+          Condition=" '$(IsPackable)' != 'false' ">
+    <Error Condition=" '$(SignAssembly)' != 'true' "
+           Text="Strong-name signing must remain enabled for shipping Trellis.ResourceNaming assemblies." />
+    <Error Condition=" !Exists('$(AssemblyOriginatorKeyFile)') "
+           Text="Strong-name key file '$(AssemblyOriginatorKeyFile)' does not exist." />
+    <Error Condition=" '$(RequireFullStrongNameSigning)' == 'true' and '$(StrongNameKeyFile)' == '' "
+           Text="Full strong-name signing was required, but StrongNameKeyFile was not provided." />
+    <Error Condition=" '$(RequireFullStrongNameSigning)' == 'true' and '$(PublicSign)' != 'false' "
+           Text="Full strong-name signing was required, but PublicSign is enabled." />
+    <Error Condition=" '$(RequireFullStrongNameSigning)' == 'true' and '$(DelaySign)' == 'true' "
+           Text="Full strong-name signing was required, but DelaySign is enabled." />
+  </Target>
+
+  <!--
     Icon and listing README for every packable project.
 
     This lives in Directory.Build.targets rather than Directory.Build.props on purpose.

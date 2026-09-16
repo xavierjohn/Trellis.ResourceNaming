@@ -32,6 +32,15 @@ jobs:
         with:
           global-json-file: global.json
 
+      # Never expose the private key to pull-request code. Those builds use the committed
+      # public key and PublicSign, preserving assembly identity without disclosing the signer.
+      - name: Configure full strong-name signing
+        if: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/v')) }}
+        shell: pwsh
+        env:
+          STRONG_NAME_KEY_BASE64: ${{ secrets.STRONG_NAME_KEY_BASE64 }}
+        run: ./build/configure-strong-name-signing.ps1
+
       - name: Cache NuGet packages
         uses: actions/cache@v6
         with:
@@ -51,6 +60,17 @@ jobs:
 
       - name: Pack
         run: dotnet pack Trellis.ResourceNaming.slnx --no-build -c Release -o artifacts
+
+      - name: Verify strong-name signing
+        shell: pwsh
+        env:
+          REQUIRE_FULL_SIGNATURE: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/v')) }}
+        run: |
+          $parameters = @{ PackageDirectory = 'artifacts' }
+          if ($env:REQUIRE_FULL_SIGNATURE -eq 'true') {
+            $parameters.RequireFullSignature = $true
+          }
+          ./build/test-strong-name-packaging.ps1 @parameters
 
       # Packaging is the only place the API-reference delivery wiring is observable. A broken
       # payload path or a suppressed Build asset leaves the build and the tests entirely green
@@ -73,3 +93,8 @@ jobs:
           name: nupkg
           path: artifacts/*.nupkg
           retention-days: 14
+
+      - name: Remove strong-name key
+        if: ${{ always() && env.StrongNameKeyFile != '' }}
+        shell: pwsh
+        run: Remove-Item -LiteralPath $env:StrongNameKeyFile -Force -ErrorAction Stop
