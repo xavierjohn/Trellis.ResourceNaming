@@ -99,3 +99,24 @@ Most callers only need `DeployedEnvironmentOptions`. Underneath:
   a name you already have, or a cloud outside the four built-ins.
 - **`AzureClouds` / `KnownClouds`** — the built-in cloud catalog (Public, US Gov, China) and their
   identifiers.
+
+## AI-native
+
+The API reference for coding agents is published by `Trellis.ResourceNaming.Abstractions`, which this
+package depends on, and it covers both packages, so one approval is enough. Restoring a package never
+installs agent instructions. To opt in, restore your consuming project or solution, then run from its
+Git root:
+
+```bash
+dotnet new tool-manifest --output .config
+dotnet tool install Trellis.AgentDocs --version 0.1.0-preview.17 --tool-manifest .config/dotnet-tools.json
+dotnet tool run agentdocs init <solution-or-project>
+```
+
+If the repository already has `.config/dotnet-tools.json`, reuse it instead of creating another manifest.
+`init` lists `Trellis.ResourceNaming.Abstractions` as pending and prints the package IDs to add to
+`approvedPackages` in `.agentdocs/policy.json`. Add it, then run `dotnet tool run agentdocs sync` to install
+the reference under Git-root `.agentdocs/`. The reference is on demand: the generated index describes it,
+and an agent opens it when its task concerns generating or changing resource names. After a package
+upgrade, run `dotnet restore` and then `dotnet tool run agentdocs sync`.
+

@@ -1,31 +1,29 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Verifies that the ResourceNaming packages deliver the LLM API reference and carry correct
-    listing metadata.
+    Verifies that the ResourceNaming packages publish the LLM API reference as AgentDocs guidance and
+    carry correct listing metadata.
 
 .DESCRIPTION
-    The API reference reaches a consumer only if three independent things hold. Each can break
-    silently - the build stays green, the tests stay green, and the docs simply never appear:
+    The API reference reaches a consumer only through the opt-in Trellis.AgentDocs local tool, and
+    only if the package carries a correct guidance manifest. Each part can break silently - the build
+    stays green, the tests stay green, and the guidance simply never installs:
 
-      1. Trellis.ResourceNaming.Abstractions packs the doc under trellis/.
-      2. It packs the copy logic at BOTH build/<id>.targets and buildTransitive/<id>.targets.
-         Neither package has Trellis.Core in its transitive closure, so nothing else will
-         supply the copy logic.
-      3. Trellis.ResourceNaming.Azure's dependency on Abstractions does NOT exclude Build
-         assets. This is the dangerous one: the SDK's DEFAULT for a ProjectReference emits
-         exclude="Build,Analyzers", which suppresses buildTransitive and delivers nothing to
-         anyone referencing only .Azure - the way almost every consumer references this family.
-         It is corrected by PrivateAssets="none" on the ProjectReference, and removing that
-         attribute reintroduces the bug with no other visible symptom.
-      4. No PackagePath declares a backslash. This repository already packs the doc at the
-         clean trellis/<name>.md, unlike its sibling repositories, and this check is what
-         keeps it that way. A trailing backslash is a directory marker on Windows and packs
-         correctly there, but on Linux it is not a separator: it normalizes and NuGet appends
-         its own, producing the malformed "trellis//<name>.md". That still satisfies a
-         trellis/*.md glob and still delivers, so the packed-path assertions below can only
-         fail on Linux. This declaration check is platform-independent and is what holds the
-         line on a developer's Windows machine.
+      1. Trellis.ResourceNaming.Abstractions packs the doc at its root path, and a
+         guidance/reference-manifest.json whose SHA-256, onDemand usage and "Open when ..."
+         description match the packed bytes. It must be the only package that ships guidance, so a
+         consumer approves exactly one package for both.
+      2. Nothing in either package runs in a consumer's build: no build/ or buildTransitive/ assets, no
+         trellis/ directory, and no dependency leaking the build-only Trellis.AgentDocs.Packaging
+         helper. Restoring a package must never write to a consumer's repository.
+      3. The published Trellis.AgentDocs tool accepts the packed Abstractions package under
+         `validate --strict`: the manifest contract plus discoverability (links that leave the
+         package, front matter, size budgets). A warning fails this gate like an error.
+      4. Both READMEs tell a consumer how to opt in: install the tool, approve the package, sync.
+      5. No PackagePath declares a backslash. A trailing backslash is a directory marker on Windows
+         but not on Linux, where it normalizes and NuGet appends its own separator, producing
+         malformed entries such as "dir//name". This declaration check is platform-independent and
+         is what holds the line on a developer's Windows machine.
 
     It then checks the nuspec listing metadata on both packages: icon, README, and the
     projectUrl/repository URLs. See the comment on that block for why.
@@ -165,47 +163,112 @@ try {
         'no PackagePath contains a backslash' `
         "offenders: $($backslashPaths -join ', ')"
 
-    # --- Abstractions: payload + copy logic -------------------------------------------------
+    # --- Abstractions: guidance payload, manifest, and nothing that runs in a consumer ---------
     $abstractionsId = 'Trellis.ResourceNaming.Abstractions'
     $abstractionsPkg = Get-Nupkg $abstractionsId
     $entries = Get-Entries $abstractionsPkg
+    $guidancePath = 'trellis-api-resourcenaming.md'
 
     Write-Host ''
     Write-Host "$abstractionsId ($(Split-Path -Leaf $abstractionsPkg))"
 
-    $docs = @($entries | Where-Object { $_ -like 'trellis/*.md' })
-    Assert-True ($docs.Count -gt 0) "packs at least one API reference under trellis/"
-    Assert-True ($docs -contains 'trellis/trellis-api-resourcenaming.md') `
-        "packs trellis/trellis-api-resourcenaming.md" `
-        "actual trellis/ entries: $($docs -join ', ')"
+    Assert-True ($entries -contains $guidancePath) "packs $guidancePath" "entries: $($entries -join ', ')"
+    Assert-True ($entries -contains 'guidance/reference-manifest.json') 'packs guidance/reference-manifest.json'
 
-    Assert-True ($entries -contains "build/$abstractionsId.targets") `
-        "packs build/$abstractionsId.targets (direct reference)"
-    Assert-True ($entries -contains "buildTransitive/$abstractionsId.targets") `
-        "packs buildTransitive/$abstractionsId.targets (transitive reference)"
+    $zip = [System.IO.Compression.ZipFile]::OpenRead($abstractionsPkg)
+    try {
+        $manifestEntry = $zip.GetEntry('guidance/reference-manifest.json')
+        $docEntry = $zip.GetEntry($guidancePath)
+        if ($manifestEntry -and $docEntry) {
+            $reader = [System.IO.StreamReader]::new($manifestEntry.Open())
+            try { $manifest = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
+            $stream = $docEntry.Open()
+            try {
+                $memory = [System.IO.MemoryStream]::new()
+                $stream.CopyTo($memory)
+                $hash = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($memory.ToArray())).ToLowerInvariant()
+            }
+            finally { $stream.Dispose() }
 
-    # --- Azure: must not suppress the build assets that carry the copy logic -----------------
+            $document = @($manifest.documents)[0]
+            $description = if ($document) { [string] $document.description } else { '' }
+            Assert-True ($manifest.schemaVersion -eq 1 -and @($manifest.documents).Count -eq 1 -and
+                $document.path -eq $guidancePath -and $document.sha256 -eq $hash -and $document.usage -eq 'onDemand' -and
+                $description.Length -gt 0 -and $description.Length -le 200 -and $description -match '^Open when ' -and
+                $null -eq $manifest.PSObject.Properties['entryPoints']) `
+                'manifest matches the packed bytes, with onDemand usage and an "Open when ..." description' `
+                "manifest: $($manifest | ConvertTo-Json -Compress -Depth 5)"
+        }
+    }
+    finally { $zip.Dispose() }
+
+    $runtimeEntries = @($entries | Where-Object { $_ -match '^(build|buildTransitive|trellis)/' })
+    Assert-True ($runtimeEntries.Count -eq 0) `
+        'packs no build/, buildTransitive/ or trellis/ entries (restore must never touch a consumer repository)' `
+        "found: $($runtimeEntries -join ', ')"
+
+    # XPath rather than property access: a package with no dependencies has no <dependencies> element, which
+    # strict mode would turn into an error on exactly the package that is meant to pass.
+    $abstractionsDeps = @((Get-Nuspec $abstractionsPkg).SelectNodes('//*[local-name()="dependency"]') |
+        Where-Object { $_.GetAttribute('id') -match '^Trellis\.(AgentDocs|Core)' })
+    Assert-True ($abstractionsDeps.Count -eq 0) `
+        'does not depend on the packaging helper or Trellis.Core' `
+        "found: $(($abstractionsDeps | ForEach-Object { $_.GetAttribute('id') }) -join ', ')"
+
+    # --- Azure: ships no guidance of its own; consumers approve Abstractions only ------------------
     $azureId = 'Trellis.ResourceNaming.Azure'
     $azurePkg = Get-Nupkg $azureId
+    $azureEntries = Get-Entries $azurePkg
     $nuspec = Get-Nuspec $azurePkg
 
     Write-Host ''
     Write-Host "$azureId ($(Split-Path -Leaf $azurePkg))"
 
-    $dependency = $nuspec.package.metadata.dependencies.group.dependency |
-        Where-Object { $_.id -eq $abstractionsId } |
-        Select-Object -First 1
+    $azureGuidance = @($azureEntries | Where-Object { $_ -match '^(guidance|build|buildTransitive|trellis)/' -or $_ -like 'trellis-api-*.md' })
+    Assert-True ($azureGuidance.Count -eq 0) `
+        'ships no guidance manifest, guidance document or build assets of its own' `
+        "found: $($azureGuidance -join ', ')"
 
-    Assert-True ($null -ne $dependency) "declares a dependency on $abstractionsId"
+    $dependency = @($nuspec.SelectNodes('//*[local-name()="dependency"]') |
+        Where-Object { $_.GetAttribute('id') -eq $abstractionsId }) | Select-Object -First 1
+    Assert-True ($null -ne $dependency) "declares a dependency on $abstractionsId, so restoring it makes the guidance available"
 
-    if ($dependency) {
-        # 'exclude' is absent when PrivateAssets="none"; the SDK default would emit "Build,Analyzers".
-        $exclude = if ($dependency.HasAttribute('exclude')) { $dependency.GetAttribute('exclude') } else { '' }
-        Assert-True ($exclude -notmatch '(?i)\bbuild\b') `
-            "does not exclude Build assets from the $abstractionsId dependency" `
-            ("exclude='$exclude'. Excluding Build suppresses buildTransitive, so a consumer referencing " +
-             "only $azureId would receive no API reference at all. Restore PrivateAssets=`"none`" on the " +
-             "ProjectReference in $azureId.csproj.")
+    # --- The published validator ------------------------------------------------------------------
+    # Pinned to the packaging helper's version, which is published in lockstep with the tool.
+    $abstractionsProject = [xml](Get-Content -LiteralPath (Join-Path $repoRoot 'src/Trellis.ResourceNaming.Abstractions/Trellis.ResourceNaming.Abstractions.csproj') -Raw)
+    $toolVersion = $abstractionsProject.SelectSingleNode('//PackageReference[@Include="Trellis.AgentDocs.Packaging"]').GetAttribute('Version')
+    $toolDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "rn-agentdocs-$([System.Guid]::NewGuid().ToString('N'))"
+    try {
+        $install = & dotnet tool install Trellis.AgentDocs --version $toolVersion --tool-path $toolDirectory 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "Could not install Trellis.AgentDocs $toolVersion for validation:`n$($install | Out-String)" }
+        $validation = & (Join-Path $toolDirectory 'agentdocs') validate $abstractionsPkg --strict 2>&1
+        Assert-True ($LASTEXITCODE -eq 0) `
+            "agentdocs validate --strict accepts the packed package ($toolVersion)" `
+            ($validation | Out-String)
+    }
+    finally { Remove-Item -LiteralPath $toolDirectory -Recurse -Force -ErrorAction SilentlyContinue }
+
+    # --- Both READMEs explain the opt-in ----------------------------------------------------------
+    foreach ($id in @($abstractionsId, $azureId)) {
+        $pkg = Get-Nupkg $id
+        $zip = [System.IO.Compression.ZipFile]::OpenRead($pkg)
+        try {
+            $readmeEntry = $zip.GetEntry('README.md')
+            $readmeText = ''
+            if ($readmeEntry) {
+                $readmeReader = [System.IO.StreamReader]::new($readmeEntry.Open())
+                try { $readmeText = $readmeReader.ReadToEnd() } finally { $readmeReader.Dispose() }
+            }
+        }
+        finally { $zip.Dispose() }
+
+        Write-Host ''
+        Write-Host "$id (README opt-in)"
+        Assert-True ($readmeText -match "(?m)^dotnet tool install Trellis\.AgentDocs --version $([regex]::Escape($toolVersion)) --tool-manifest \.config/dotnet-tools\.json\r?$" -and
+            $readmeText.Contains('dotnet tool run agentdocs init <solution-or-project>') -and
+            $readmeText.Contains('approvedPackages') -and $readmeText.Contains('dotnet tool run agentdocs sync') -and
+            $readmeText.Contains($abstractionsId)) `
+            'README explains installing the tool, approving Trellis.ResourceNaming.Abstractions, and syncing'
     }
 
     # --- Both packages: listing metadata ------------------------------------------------------

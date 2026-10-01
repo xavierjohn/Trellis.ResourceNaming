@@ -39,10 +39,11 @@ one the application resolves at runtime.
 
 ## Documentation
 
-`docs/api_reference/trellis-api-resourcenaming.md` is written for LLM coding agents and
-ships inside the `Trellis.ResourceNaming.Abstractions` package. On build it is copied into
-the consuming repository's `.github/` folder, so an agent working in that repository finds
-it without a separate fetch. It is organised as a decision table and a ranked list of traps,
+`docs/api_reference/trellis-api-resourcenaming.md` is written for LLM coding agents and is
+published as on-demand AgentDocs guidance by the `Trellis.ResourceNaming.Abstractions` package.
+Restoring a package installs nothing: a consumer opts in with the `Trellis.AgentDocs` local tool
+and approves that one package, which covers `Trellis.ResourceNaming.Azure` too (the setup steps are in
+each package README). It is organised as a decision table and a ranked list of traps,
 because nearly every misuse of this library produces a wrong name at runtime rather than a
 compile error.
 
@@ -50,14 +51,14 @@ compile error.
 
 ```
 src/      the two packages and their tests
-build/    API reference delivery and package-signing gates
+build/    guidance packaging and package-signing gates
 docs/     the LLM API reference that ships in the package
 ```
 
-`build/Trellis.ApiReference.targets` is a verbatim copy of the file in
-[xavierjohn/Trellis](https://github.com/xavierjohn/Trellis). Neither package here has
-`Trellis.Core` in its transitive closure, so this repository must ship the copy logic
-itself. Fix bugs upstream and re-copy rather than editing it here.
+The guidance is packed by the build-only
+[`Trellis.AgentDocs.Packaging`](https://www.nuget.org/packages/Trellis.AgentDocs.Packaging) helper, which
+generates the manifest at pack time. `build/test-apireference-packaging.ps1` inspects the packed
+`.nupkg` and runs the published `agentdocs validate --strict` over it.
 
 ## Building
 

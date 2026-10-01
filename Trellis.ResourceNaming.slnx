@@ -15,7 +15,6 @@
   <Folder Name="/Solution Items/">
     <File Path="LICENSE" />
     <File Path="README.md" />
-    <File Path="build/Trellis.ApiReference.targets" />
     <File Path="build/test-apireference-packaging.ps1" />
     <File Path="global.json" />
     <File Path="nuget.config" />
