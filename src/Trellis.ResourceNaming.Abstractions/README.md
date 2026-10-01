@@ -64,9 +64,23 @@ startup is preferable to discovering a mangled name in production.
 
 ## AI-native
 
-This package ships an API reference for coding agents at `trellis/trellis-api-resourcenaming.md`
-and copies it into the consuming repository's `.github/` directory at build time, covering both
-this package and `Trellis.ResourceNaming.Azure`.
+This package carries an API reference for coding agents that covers both this package and
+`Trellis.ResourceNaming.Azure`, so one approval is enough for either. Restoring a package never
+installs agent instructions. To opt in, restore your consuming project or solution, then run from its
+Git root:
+
+```bash
+dotnet new tool-manifest --output .config
+dotnet tool install Trellis.AgentDocs --version 0.1.0-preview.17 --tool-manifest .config/dotnet-tools.json
+dotnet tool run agentdocs init <solution-or-project>
+```
+
+If the repository already has `.config/dotnet-tools.json`, reuse it instead of creating another manifest.
+`init` lists `Trellis.ResourceNaming.Abstractions` as pending and prints the package IDs to add to
+`approvedPackages` in `.agentdocs/policy.json`. Add it, then run `dotnet tool run agentdocs sync` to install
+the reference under Git-root `.agentdocs/`. The reference is on demand: the generated index describes it,
+and an agent opens it when its task concerns generating or changing resource names. After a package
+upgrade, run `dotnet restore` and then `dotnet tool run agentdocs sync`.
 
 ## Links
 

@@ -82,9 +82,10 @@ jobs:
           }
           ./build/test-strong-name-packaging.ps1 @parameters
 
-      # Packaging is the only place the API-reference delivery wiring is observable. A broken
-      # payload path or a suppressed Build asset leaves the build and the tests entirely green
-      # while shipping no documentation at all, so this gate inspects the .nupkg itself.
+      # Packaging is the only place the guidance wiring is observable. A broken payload path or a
+      # malformed manifest leaves the build and the tests entirely green while shipping no
+      # documentation at all, so this gate inspects the .nupkg itself and runs the published
+      # `agentdocs validate --strict` over it.
       #
       # Verifies the artifacts packed above rather than packing its own copy, so what is
       # uploaded below is exactly what was checked.

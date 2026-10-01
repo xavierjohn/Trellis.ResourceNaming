@@ -69,19 +69,19 @@ Adding a resource type to the Azure catalog means updating the catalog table in 
 
 ## Packaging
 
-The API reference reaches consumers through MSBuild targets packed into the `.nupkg`. This is
-silent when broken: the build stays green, the tests stay green, and no documentation is
-delivered. `0.1.0-preview.1` shipped exactly that way.
+The API reference reaches consumers as AgentDocs guidance: the build-only
+`Trellis.AgentDocs.Packaging` helper packs the doc and generates `guidance/reference-manifest.json` at pack
+time, and a consumer installs it only by opting in with the `Trellis.AgentDocs` local tool. This is silent
+when broken: the build stays green, the tests stay green, and no documentation is delivered.
+`0.1.0-preview.1` shipped exactly that way.
 
-- `build/Trellis.ApiReference.targets` is a **verbatim copy** from `xavierjohn/Trellis`.
-  Fix bugs upstream and re-copy. Editing it here creates federation drift, and which copy
-  wins then depends on NuGet import order.
-- Neither package has `Trellis.Core` in its transitive closure, so this repository must ship
-  the copy logic, not just the doc payload.
-- `Trellis.ResourceNaming.Azure` needs `PrivateAssets="none"` on its `ProjectReference`. The
-  SDK default packs the dependency as `exclude="Build,Analyzers"`, which suppresses
-  `buildTransitive` and delivers nothing to anyone referencing only `.Azure`.
-- Use **forward slashes** in `PackagePath`. A trailing backslash yields `trellis//<name>.md`
+- `Trellis.ResourceNaming.Abstractions` owns the guidance (the `PackageGuidance*` properties in its
+  csproj). `Trellis.ResourceNaming.Azure` ships none, so a consumer approves one package for both.
+- Nothing may run in a consumer's build: no `build/` or `buildTransitive/` assets and no dependency on the
+  helper (`PrivateAssets="all"`). Restoring a package must never write to a consumer's repository.
+- Keep the `PackageGuidanceDescription` to one line of at most 200 characters starting `Open when `; it is
+  what an agent reads to decide whether to open the doc.
+- Use **forward slashes** in any `PackagePath`. A trailing backslash yields a malformed `dir//name` entry
   on Linux, which still satisfies a glob check and so passes casual inspection.
 
 Run `./build/test-apireference-packaging.ps1` after touching any of the above.
