@@ -27,7 +27,7 @@
     <PackageGuidanceDocument>$(MSBuildThisFileDirectory)..\..\docs\api_reference\trellis-api-resourcenaming.md</PackageGuidanceDocument>
     <PackageGuidancePath>trellis-api-resourcenaming.md</PackageGuidancePath>
     <PackageGuidanceUsage>onDemand</PackageGuidanceUsage>
-    <PackageGuidanceDescription>Open when generating or changing Azure resource names, endpoints or URLs with IResourceNamer, AzureResourceNamer, ResourceTypeSpec or DeployedEnvironmentOptions.</PackageGuidanceDescription>
+    <PackageGuidanceDescription>Open when generating or changing resource names with IResourceNamer, NamingPolicy or ResourceTypeSpec, or Azure names, endpoints and URLs with AzureResourceNamer or DeployedEnvironmentOptions.</PackageGuidanceDescription>
   </PropertyGroup>
 
   <ItemGroup>
