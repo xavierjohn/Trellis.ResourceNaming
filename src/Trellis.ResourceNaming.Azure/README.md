@@ -1,4 +1,4 @@
-# Trellis.ResourceNaming.Azure
+﻿# Trellis.ResourceNaming.Azure
 
 Deterministic, [CAF](https://learn.microsoft.com/azure/cloud-adoption-framework/ready/azure-best-practices/resource-naming)-aligned
 naming **and** endpoint resolution for Azure resources, behind the `IResourceNamer` seam. Bind your
@@ -109,7 +109,7 @@ Git root:
 
 ```bash
 dotnet new tool-manifest --output .config
-dotnet tool install Trellis.AgentDocs --version 0.1.0-preview.19 --tool-manifest .config/dotnet-tools.json
+dotnet tool install Trellis.AgentDocs --version 0.1.0-preview.20 --tool-manifest .config/dotnet-tools.json
 dotnet tool run agentdocs init <solution-or-project>
 ```
 
@@ -119,4 +119,3 @@ If the repository already has `.config/dotnet-tools.json`, reuse it instead of c
 the reference under Git-root `.agentdocs/`. The reference is on demand: the generated index describes it,
 and an agent opens it when its task concerns generating or changing resource names. After a package
 upgrade, run `dotnet restore` and then `dotnet tool run agentdocs sync`.
-

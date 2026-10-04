@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>Trellis.ResourceNaming.Abstractions</PackageId>
     <Description>Store- and cloud-agnostic abstractions for convention-based resource naming: the IResourceNamer seam, the naming request model, and the resource-type specification.</Description>
@@ -31,6 +31,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Trellis.AgentDocs.Packaging" Version="0.1.0-preview.19" PrivateAssets="all" />
+    <PackageReference Include="Trellis.AgentDocs.Packaging" Version="0.1.0-preview.20" PrivateAssets="all" />
   </ItemGroup>
 </Project>

@@ -1,4 +1,4 @@
-# Trellis.ResourceNaming
+﻿# Trellis.ResourceNaming
 
 Deterministic, length-safe naming for cloud resources.
 
@@ -47,6 +47,10 @@ each package README). It is organised as a decision table and a ranked list of t
 because nearly every misuse of this library produces a wrong name at runtime rather than a
 compile error.
 
+The publisher helper and consumer tool are both pinned to `0.1.0-preview.20`. After upgrading
+a consuming package, run `dotnet restore` and then `dotnet tool run agentdocs sync` to refresh
+the approved reference.
+
 ## Layout
 
 ```
@@ -57,8 +61,11 @@ docs/     the LLM API reference that ships in the package
 
 The guidance is packed by the build-only
 [`Trellis.AgentDocs.Packaging`](https://www.nuget.org/packages/Trellis.AgentDocs.Packaging) helper, which
-generates the manifest at pack time. `build/test-apireference-packaging.ps1` inspects the packed
-`.nupkg` and runs the published `agentdocs validate --strict` over it.
+generates a schema-v1 `guidance/reference-manifest.json` at pack time. Abstractions packs
+`trellis-api-resourcenaming.md` at its package root; the manifest records its SHA-256 hash,
+on-demand usage and task description. The helper is private to the build and does not become
+a consumer dependency. `build/test-apireference-packaging.ps1` inspects the packed `.nupkg`
+and runs the published `agentdocs validate --strict` over it.
 
 ## Building
 
