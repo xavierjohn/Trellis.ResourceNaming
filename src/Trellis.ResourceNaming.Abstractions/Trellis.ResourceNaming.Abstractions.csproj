@@ -31,6 +31,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Trellis.AgentDocs.Packaging" Version="0.1.0-preview.20" PrivateAssets="all" />
+    <PackageReference Include="Trellis.AgentDocs.Packaging" Version="1.0.2" PrivateAssets="all" />
   </ItemGroup>
 </Project>
